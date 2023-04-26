@@ -128,7 +128,7 @@ module Xdrgen
       end
 
       def render_enum(enum)
-        file_name = "#{enum.name.downcase.underscore}.ex"
+        file_name = "#{enum.name.underscore.downcase}.ex"
         out = @output.open(file_name)
 
         render_define_block_enum_type(out, enum.name) do 
@@ -141,7 +141,7 @@ module Xdrgen
             end
             out.puts "]\n\n"
 
-            out.puts "@enum_spec %XDR.Enum{declarations: @declarations, indentifier: nil}\n\n"
+            out.puts "@enum_spec %XDR.Enum{declarations: @declarations, identifier: nil}\n\n"
 
             out.puts "@type t :: %__MODULE__{identifier: atom()}\n\n"
 
@@ -169,15 +169,16 @@ module Xdrgen
             out.puts "@impl true"
             out.puts "def decode_xdr(bytes, spec \\\\ @enum_spec)\n\n"
 
-            out.puts "def decode_xdr(bytes, spec) do:\n"
+            out.puts "def decode_xdr(bytes, spec) do\n"
             out.indent do
               out.puts "case XDR.Enum.decode_xdr(bytes, spec) do\n"
               out.indent do
                 out.puts "{:ok, {%XDR.Enum{identifier: type}, rest}} -> {:ok, {new(type), rest}}\n"
                 out.puts "error -> error\n"
               end
-              out.puts "end\n\n"
+              out.puts "end\n"
             end
+            out.puts "end\n\n"
 
             out.puts "@impl true"
             out.puts "def decode_xdr!(bytes, spec \\\\ @enum_spec)\n\n"

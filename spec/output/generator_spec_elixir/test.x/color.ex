@@ -16,7 +16,7 @@ defmodule MyXDR.Color do
     GREEN: 6
   ]
 
-  @enum_spec %XDR.Enum{declarations: @declarations, indentifier: nil}
+  @enum_spec %XDR.Enum{declarations: @declarations, identifier: nil}
 
   @type t :: %__MODULE__{identifier: atom()}
 
@@ -40,11 +40,12 @@ defmodule MyXDR.Color do
   @impl true
   def decode_xdr(bytes, spec \\ @enum_spec)
 
-  def decode_xdr(bytes, spec) do:
+  def decode_xdr(bytes, spec) do
     case XDR.Enum.decode_xdr(bytes, spec) do
       {:ok, {%XDR.Enum{identifier: type}, rest}} -> {:ok, {new(type), rest}}
       error -> error
     end
+  end
 
   @impl true
   def decode_xdr!(bytes, spec \\ @enum_spec)
