@@ -80,7 +80,7 @@ module Xdrgen
 
           Target implementation: elixir_xdr at https://hex.pm/packages/elixir_xdr
 
-          Representation of Stellar `#{type}` type.
+          Representation of Stellar `#{type.upcase_first}` type.
           """
         EOS
         out.break
@@ -99,7 +99,7 @@ module Xdrgen
       end
 
       def render_define_block_enum_type(out, module_name)
-        out.puts "defmodule #{@namespace}.#{module_name} do"
+        out.puts "defmodule #{@namespace}.#{module_name.upcase_first} do"
         out.indent do
           render_moduledoc_enum_type(out, module_name)
         end
@@ -151,20 +151,22 @@ module Xdrgen
             out.puts "def new(type \\\\ :#{enum.members.first.name}), do: %__MODULE__{identifier: type}\n\n"
 
             out.puts "@impl true"
-            out.puts "def encode_xdr(%__MODULE__{identifier: type}), do:\n"
+            out.puts "def encode_xdr(%__MODULE__{identifier: type}) do\n"
             out.indent do
               out.puts "@declarations\n"
               out.puts "|> XDR.Enum.new(type)\n"
-              out.puts "|> XDR.Enum.encode_xdr()\n\n"
+              out.puts "|> XDR.Enum.encode_xdr()\n"
             end
+            out.puts "end\n\n"
 
             out.puts "@impl true"
-            out.puts "def encode_xdr!(%__MODULE__{identifier: type}), do:\n"
+            out.puts "def encode_xdr!(%__MODULE__{identifier: type}) do\n"
             out.indent do
               out.puts "@declarations\n"
               out.puts "|> XDR.Enum.new(type)\n"
-              out.puts "|> XDR.Enum.encode_xdr!()\n\n"
+              out.puts "|> XDR.Enum.encode_xdr!()\n"
             end
+            out.puts "end\n\n"
 
             out.puts "@impl true"
             out.puts "def decode_xdr(bytes, spec \\\\ @enum_spec)\n\n"

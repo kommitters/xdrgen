@@ -26,16 +26,18 @@ defmodule MyXDR.UnionKey do
   def new(type \\ :ONE), do: %__MODULE__{identifier: type}
 
   @impl true
-  def encode_xdr(%__MODULE__{identifier: type}), do:
+  def encode_xdr(%__MODULE__{identifier: type}) do
     @declarations
     |> XDR.Enum.new(type)
     |> XDR.Enum.encode_xdr()
+  end
 
   @impl true
-  def encode_xdr!(%__MODULE__{identifier: type}), do:
+  def encode_xdr!(%__MODULE__{identifier: type}) do
     @declarations
     |> XDR.Enum.new(type)
     |> XDR.Enum.encode_xdr!()
+  end
 
   @impl true
   def decode_xdr(bytes, spec \\ @enum_spec)
