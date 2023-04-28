@@ -10,12 +10,13 @@ defmodule MyXDR.NestedUnion do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{Color,
-    XDR.Type.Void
+  alias MyXDR.{
+    Color,
+    Void
   }
 
   @arms [
-    RED: XDR.Type.Void
+    RED: Void
   ]
 
   @type value ::
@@ -62,7 +63,7 @@ defmodule MyXDR.NestedUnion do
   @spec union_spec() :: XDR.Union.t()
   defp union_spec do
     nil
-    |> SCValType.new()
+    |> Color.new()
     |> XDR.Union.new(@arms)
   end
 end

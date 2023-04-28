@@ -10,21 +10,22 @@ defmodule MyXDR.MyUnion do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{UnionKey,
+  alias MyXDR.{
+    UnionKey,
     MyUnionOne,
     MyUnionTwo,
-    XDR.Type.Void
+    Void
   }
 
   @arms [
     ONE: MyUnionOne,
     TWO: MyUnionTwo,
-    OFFER: XDR.Type.Void
+    OFFER: Void
   ]
 
   @type value ::
-    MyUnionOne.t()
-    | MyUnionTwo.t()
+          MyUnionOne.t()
+          | MyUnionTwo.t()
 
   @type t :: %__MODULE__{value: value(), type: UnionKey.t()}
 
@@ -68,7 +69,7 @@ defmodule MyXDR.MyUnion do
   @spec union_spec() :: XDR.Union.t()
   defp union_spec do
     nil
-    |> SCValType.new()
+    |> UnionKey.new()
     |> XDR.Union.new(@arms)
   end
 end

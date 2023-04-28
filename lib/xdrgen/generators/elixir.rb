@@ -201,10 +201,11 @@ module Xdrgen
 
         render_define_block_enum_type(out, union.name) do 
           out.indent do
-            out.puts "alias #{@namespace}.{#{type_reference union.discriminant.type},"
+            out.puts "alias #{@namespace}.{\n"
             out.indent do
+              out.puts "#{type_reference union.discriminant.type},"
               union.normal_arms.each_with_index do |arm, i|
-                arm_name = arm.void? ? "XDR.Type.Void" : "#{type_reference arm.type}"
+                arm_name = arm.void? ? "Void" : "#{type_reference arm.type}"
 
                 arm.cases.each do |acase|
                   out.puts "#{arm_name}#{comma_unless_last(i, union.normal_arms)}"
@@ -216,7 +217,7 @@ module Xdrgen
             out.puts "@arms ["
             out.indent do
               union.normal_arms.each_with_index do |arm, i|
-                arm_name = arm.void? ? "XDR.Type.Void" : "#{type_reference arm.type}"
+                arm_name = arm.void? ? "Void" : "#{type_reference arm.type}"
 
                 arm.cases.each do |acase|
                   switch = if acase.value.is_a?(AST::Identifier)
@@ -232,7 +233,7 @@ module Xdrgen
             out.puts "]\n\n"
 
             out.puts "@type value ::"
-            out.indent do
+            out.indent(4) do
               union.normal_arms.each_with_index do |arm, i|
                 next if arm.void?
                 if i == 0
@@ -297,7 +298,7 @@ module Xdrgen
             out.puts "defp union_spec do"
             out.indent do
               out.puts "nil\n"
-              out.puts "|> SCValType.new()\n"
+              out.puts "|> #{type_reference union.discriminant.type}.new()\n"
               out.puts "|> XDR.Union.new(@arms)\n"
             end
             out.puts "end\n"

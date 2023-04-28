@@ -10,7 +10,8 @@ defmodule MyXDR.IntUnion do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{build_type(Int),
+  alias MyXDR.{
+    build_type(Int),
     Error,
     build_type(VariableArray, max_length: 2147483647, type: Multi)
   }
@@ -21,8 +22,8 @@ defmodule MyXDR.IntUnion do
   ]
 
   @type value ::
-    Error.t()
-    | build_type(VariableArray, max_length: 2147483647, type: Multi).t()
+          Error.t()
+          | build_type(VariableArray, max_length: 2147483647, type: Multi).t()
 
   @type t :: %__MODULE__{value: value(), type: build_type(Int).t()}
 
@@ -66,7 +67,7 @@ defmodule MyXDR.IntUnion do
   @spec union_spec() :: XDR.Union.t()
   defp union_spec do
     nil
-    |> SCValType.new()
+    |> build_type(Int).new()
     |> XDR.Union.new(@arms)
   end
 end
