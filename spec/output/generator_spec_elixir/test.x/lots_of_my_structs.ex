@@ -10,35 +10,54 @@ defmodule MyXDR.LotsOfMyStructs do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{build_type(VariableArray, max_length: 2147483647, type: MyStruct)} 
+  alias MyXDR.{ 
+    build_type(MyStructList)
+  } 
 
   @struct_spec XDR.Struct.new(
-    members: build_type(VariableArray, max_length: 2147483647, type: MyStruct)
+    members: build_type(MyStructList)
   )
 
-  @type members :: build_type(VariableArray, max_length: 2147483647, type: MyStruct).t()
+  @type members :: build_type(MyStructList).t()
 
-  @type t :: %__MODULE__{members: members()}
+  @type t :: %__MODULE__{
+    members: members()
+  }
 
-  defstruct [:members]
+  defstruct [
+    :members
+  ]
 
-  @spec new(members :: members()) :: t()
+  @spec new(
+    members :: members()
+  ) :: t()
 
   def new(
-    %build_type(VariableArray, max_length: 2147483647, type: MyStruct){} = members
+    %build_type(MyStructList){} = members
   ),
-  do: %__MODULE__{members: members}
+
+  do: %__MODULE__{
+    members: members
+  }
 
   @impl true
-  def encode_xdr(%__MODULE__{members: members}) do 
-    [members: members]
+  def encode_xdr(%__MODULE__{
+    members: members
+  }) do 
+    [
+    members: members
+    ]
     |> XDR.Struct.new()
     |> XDR.Struct.encode_xdr()
   end 
 
   @impl true
-  def encode_xdr!(%__MODULE__{members: members}) do 
-    [members: members]
+  def encode_xdr!(%__MODULE__{
+    members: members
+  }) do 
+    [
+    members: members
+    ]
     |> XDR.Struct.new()
     |> XDR.Struct.encode_xdr!()
   end 
@@ -48,7 +67,9 @@ defmodule MyXDR.LotsOfMyStructs do
 
   def decode_xdr(bytes, struct) do
     case XDR.Struct.decode_xdr(bytes, struct) do
-      {:ok, {%XDR.Struct{components: [members: members]}, rest}} -> 
+      {:ok, {%XDR.Struct{components: [
+        members: members
+      ]}, rest}} -> 
         {:ok, {new(members), rest}}
       error -> error
     end
@@ -58,8 +79,12 @@ defmodule MyXDR.LotsOfMyStructs do
   def decode_xdr!(bytes, struct \\ @struct_spec) 
 
   def decode_xdr!(bytes, struct) do
-    {%XDR.Struct{components: [members: members]}, rest} = 
+    {%XDR.Struct{components: [
+      members: members
+    ]}, rest} = 
       XDR.Struct.decode_xdr!(bytes, struct)
-    {new(members), rest}
+    {new(
+      members
+    ), rest}
   end
 end

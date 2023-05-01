@@ -10,7 +10,9 @@ defmodule MyXDR.HasStuff do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{LotsOfMyStructs} 
+  alias MyXDR.{ 
+    LotsOfMyStructs
+  } 
 
   @struct_spec XDR.Struct.new(
     data: LotsOfMyStructs
@@ -18,27 +20,44 @@ defmodule MyXDR.HasStuff do
 
   @type data :: LotsOfMyStructs.t()
 
-  @type t :: %__MODULE__{data: data()}
+  @type t :: %__MODULE__{
+    data: data()
+  }
 
-  defstruct [:data]
+  defstruct [
+    :data
+  ]
 
-  @spec new(data :: data()) :: t()
+  @spec new(
+    data :: data()
+  ) :: t()
 
   def new(
     %LotsOfMyStructs{} = data
   ),
-  do: %__MODULE__{data: data}
+
+  do: %__MODULE__{
+    data: data
+  }
 
   @impl true
-  def encode_xdr(%__MODULE__{data: data}) do 
-    [data: data]
+  def encode_xdr(%__MODULE__{
+    data: data
+  }) do 
+    [
+    data: data
+    ]
     |> XDR.Struct.new()
     |> XDR.Struct.encode_xdr()
   end 
 
   @impl true
-  def encode_xdr!(%__MODULE__{data: data}) do 
-    [data: data]
+  def encode_xdr!(%__MODULE__{
+    data: data
+  }) do 
+    [
+    data: data
+    ]
     |> XDR.Struct.new()
     |> XDR.Struct.encode_xdr!()
   end 
@@ -48,7 +67,9 @@ defmodule MyXDR.HasStuff do
 
   def decode_xdr(bytes, struct) do
     case XDR.Struct.decode_xdr(bytes, struct) do
-      {:ok, {%XDR.Struct{components: [data: data]}, rest}} -> 
+      {:ok, {%XDR.Struct{components: [
+        data: data
+      ]}, rest}} -> 
         {:ok, {new(data), rest}}
       error -> error
     end
@@ -58,8 +79,12 @@ defmodule MyXDR.HasStuff do
   def decode_xdr!(bytes, struct \\ @struct_spec) 
 
   def decode_xdr!(bytes, struct) do
-    {%XDR.Struct{components: [data: data]}, rest} = 
+    {%XDR.Struct{components: [
+      data: data
+    ]}, rest} = 
       XDR.Struct.decode_xdr!(bytes, struct)
-    {new(data), rest}
+    {new(
+      data
+    ), rest}
   end
 end

@@ -10,7 +10,9 @@ defmodule MyXDR.NestedStruct do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{build_type(Int)} 
+  alias MyXDR.{ 
+    build_type(Int)
+  } 
 
   @struct_spec XDR.Struct.new(
     blah: build_type(Int)
@@ -18,27 +20,44 @@ defmodule MyXDR.NestedStruct do
 
   @type blah :: build_type(Int).t()
 
-  @type t :: %__MODULE__{blah: blah()}
+  @type t :: %__MODULE__{
+    blah: blah()
+  }
 
-  defstruct [:blah]
+  defstruct [
+    :blah
+  ]
 
-  @spec new(blah :: blah()) :: t()
+  @spec new(
+    blah :: blah()
+  ) :: t()
 
   def new(
     %build_type(Int){} = blah
   ),
-  do: %__MODULE__{blah: blah}
+
+  do: %__MODULE__{
+    blah: blah
+  }
 
   @impl true
-  def encode_xdr(%__MODULE__{blah: blah}) do 
-    [blah: blah]
+  def encode_xdr(%__MODULE__{
+    blah: blah
+  }) do 
+    [
+    blah: blah
+    ]
     |> XDR.Struct.new()
     |> XDR.Struct.encode_xdr()
   end 
 
   @impl true
-  def encode_xdr!(%__MODULE__{blah: blah}) do 
-    [blah: blah]
+  def encode_xdr!(%__MODULE__{
+    blah: blah
+  }) do 
+    [
+    blah: blah
+    ]
     |> XDR.Struct.new()
     |> XDR.Struct.encode_xdr!()
   end 
@@ -48,7 +67,9 @@ defmodule MyXDR.NestedStruct do
 
   def decode_xdr(bytes, struct) do
     case XDR.Struct.decode_xdr(bytes, struct) do
-      {:ok, {%XDR.Struct{components: [blah: blah]}, rest}} -> 
+      {:ok, {%XDR.Struct{components: [
+        blah: blah
+      ]}, rest}} -> 
         {:ok, {new(blah), rest}}
       error -> error
     end
@@ -58,8 +79,12 @@ defmodule MyXDR.NestedStruct do
   def decode_xdr!(bytes, struct \\ @struct_spec) 
 
   def decode_xdr!(bytes, struct) do
-    {%XDR.Struct{components: [blah: blah]}, rest} = 
+    {%XDR.Struct{components: [
+      blah: blah
+    ]}, rest} = 
       XDR.Struct.decode_xdr!(bytes, struct)
-    {new(blah), rest}
+    {new(
+      blah
+    ), rest}
   end
 end

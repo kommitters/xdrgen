@@ -10,7 +10,9 @@ defmodule MyXDR.One do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{build_type(Int)} 
+  alias MyXDR.{ 
+    build_type(Int)
+  } 
 
   @struct_spec XDR.Struct.new(
     someInt: build_type(Int)
@@ -18,27 +20,44 @@ defmodule MyXDR.One do
 
   @type someInt :: build_type(Int).t()
 
-  @type t :: %__MODULE__{someInt: someInt()}
+  @type t :: %__MODULE__{
+    someInt: someInt()
+  }
 
-  defstruct [:someInt]
+  defstruct [
+    :someInt
+  ]
 
-  @spec new(someInt :: someInt()) :: t()
+  @spec new(
+    someInt :: someInt()
+  ) :: t()
 
   def new(
     %build_type(Int){} = someInt
   ),
-  do: %__MODULE__{someInt: someInt}
+
+  do: %__MODULE__{
+    someInt: someInt
+  }
 
   @impl true
-  def encode_xdr(%__MODULE__{someInt: someInt}) do 
-    [someInt: someInt]
+  def encode_xdr(%__MODULE__{
+    someInt: someInt
+  }) do 
+    [
+    someInt: someInt
+    ]
     |> XDR.Struct.new()
     |> XDR.Struct.encode_xdr()
   end 
 
   @impl true
-  def encode_xdr!(%__MODULE__{someInt: someInt}) do 
-    [someInt: someInt]
+  def encode_xdr!(%__MODULE__{
+    someInt: someInt
+  }) do 
+    [
+    someInt: someInt
+    ]
     |> XDR.Struct.new()
     |> XDR.Struct.encode_xdr!()
   end 
@@ -48,7 +67,9 @@ defmodule MyXDR.One do
 
   def decode_xdr(bytes, struct) do
     case XDR.Struct.decode_xdr(bytes, struct) do
-      {:ok, {%XDR.Struct{components: [someInt: someInt]}, rest}} -> 
+      {:ok, {%XDR.Struct{components: [
+        someInt: someInt
+      ]}, rest}} -> 
         {:ok, {new(someInt), rest}}
       error -> error
     end
@@ -58,8 +79,12 @@ defmodule MyXDR.One do
   def decode_xdr!(bytes, struct \\ @struct_spec) 
 
   def decode_xdr!(bytes, struct) do
-    {%XDR.Struct{components: [someInt: someInt]}, rest} = 
+    {%XDR.Struct{components: [
+      someInt: someInt
+    ]}, rest} = 
       XDR.Struct.decode_xdr!(bytes, struct)
-    {new(someInt), rest}
+    {new(
+      someInt
+    ), rest}
   end
 end

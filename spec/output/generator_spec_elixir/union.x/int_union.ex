@@ -13,17 +13,17 @@ defmodule MyXDR.IntUnion do
   alias MyXDR.{
     build_type(Int),
     Error,
-    build_type(VariableArray, max_length: 2147483647, type: Multi)
+    build_type(MultiList)
   }
 
   @arms [
     0: Error,
-    1: build_type(VariableArray, max_length: 2147483647, type: Multi)
+    1: build_type(MultiList)
   ]
 
   @type value ::
           Error.t()
-          | build_type(VariableArray, max_length: 2147483647, type: Multi).t()
+          | build_type(MultiList).t()
 
   @type t :: %__MODULE__{value: value(), type: build_type(Int).t()}
 

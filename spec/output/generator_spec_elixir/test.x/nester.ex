@@ -10,7 +10,11 @@ defmodule MyXDR.Nester do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{NesterNestedEnum, NesterNestedStruct, NesterNestedUnion} 
+  alias MyXDR.{ 
+    NesterNestedEnum,
+    NesterNestedStruct,
+    NesterNestedUnion
+  } 
 
   @struct_spec XDR.Struct.new(
     nestedEnum: NesterNestedEnum,
@@ -22,29 +26,62 @@ defmodule MyXDR.Nester do
   @type nestedStruct :: NesterNestedStruct.t()
   @type nestedUnion :: NesterNestedUnion.t()
 
-  @type t :: %__MODULE__{nestedEnum: nestedEnum(), nestedStruct: nestedStruct(), nestedUnion: nestedUnion()}
+  @type t :: %__MODULE__{
+    nestedEnum: nestedEnum(),
+    nestedStruct: nestedStruct(),
+    nestedUnion: nestedUnion()
+  }
 
-  defstruct [:nestedEnum, :nestedStruct, :nestedUnion]
+  defstruct [
+    :nestedEnum,
+    :nestedStruct,
+    :nestedUnion
+  ]
 
-  @spec new(nestedEnum :: nestedEnum(), nestedStruct :: nestedStruct(), nestedUnion :: nestedUnion()) :: t()
+  @spec new(
+    nestedEnum :: nestedEnum(),
+    nestedStruct :: nestedStruct(),
+    nestedUnion :: nestedUnion()
+  ) :: t()
 
   def new(
     %NesterNestedEnum{} = nestedEnum,
     %NesterNestedStruct{} = nestedStruct,
     %NesterNestedUnion{} = nestedUnion
   ),
-  do: %__MODULE__{nestedEnum: nestedEnum, nestedStruct: nestedStruct, nestedUnion: nestedUnion}
+
+  do: %__MODULE__{
+    nestedEnum: nestedEnum,
+    nestedStruct: nestedStruct,
+    nestedUnion: nestedUnion
+  }
 
   @impl true
-  def encode_xdr(%__MODULE__{nestedEnum: nestedEnum, nestedStruct: nestedStruct, nestedUnion: nestedUnion}) do 
-    [nestedEnum: nestedEnum, nestedStruct: nestedStruct, nestedUnion: nestedUnion]
+  def encode_xdr(%__MODULE__{
+    nestedEnum: nestedEnum,
+    nestedStruct: nestedStruct,
+    nestedUnion: nestedUnion
+  }) do 
+    [
+    nestedEnum: nestedEnum,
+    nestedStruct: nestedStruct,
+    nestedUnion: nestedUnion
+    ]
     |> XDR.Struct.new()
     |> XDR.Struct.encode_xdr()
   end 
 
   @impl true
-  def encode_xdr!(%__MODULE__{nestedEnum: nestedEnum, nestedStruct: nestedStruct, nestedUnion: nestedUnion}) do 
-    [nestedEnum: nestedEnum, nestedStruct: nestedStruct, nestedUnion: nestedUnion]
+  def encode_xdr!(%__MODULE__{
+    nestedEnum: nestedEnum,
+    nestedStruct: nestedStruct,
+    nestedUnion: nestedUnion
+  }) do 
+    [
+    nestedEnum: nestedEnum,
+    nestedStruct: nestedStruct,
+    nestedUnion: nestedUnion
+    ]
     |> XDR.Struct.new()
     |> XDR.Struct.encode_xdr!()
   end 
@@ -54,8 +91,12 @@ defmodule MyXDR.Nester do
 
   def decode_xdr(bytes, struct) do
     case XDR.Struct.decode_xdr(bytes, struct) do
-      {:ok, {%XDR.Struct{components: [nestedEnum: nestedEnum, nestedStruct: nestedStruct, nestedUnion: nestedUnion]}, rest}} -> 
-        {:ok, {new(nestedEnum, nestedStruct, nestedUnion), rest}}
+      {:ok, {%XDR.Struct{components: [
+        nestedEnum: nestedEnum,
+        nestedStruct: nestedStruct,
+        nestedUnion: nestedUnion
+      ]}, rest}} -> 
+        {:ok, {new(nestedEnum,nestedStruct,nestedUnion), rest}}
       error -> error
     end
   end 
@@ -64,8 +105,16 @@ defmodule MyXDR.Nester do
   def decode_xdr!(bytes, struct \\ @struct_spec) 
 
   def decode_xdr!(bytes, struct) do
-    {%XDR.Struct{components: [nestedEnum: nestedEnum, nestedStruct: nestedStruct, nestedUnion: nestedUnion]}, rest} = 
+    {%XDR.Struct{components: [
+      nestedEnum: nestedEnum,
+      nestedStruct: nestedStruct,
+      nestedUnion: nestedUnion
+    ]}, rest} = 
       XDR.Struct.decode_xdr!(bytes, struct)
-    {new(nestedEnum, nestedStruct, nestedUnion), rest}
+    {new(
+      nestedEnum,
+      nestedStruct,
+      nestedUnion
+    ), rest}
   end
 end
