@@ -102,17 +102,15 @@ module Xdrgen
         out = @output.open(file_name)
 
         render_define_block(out, struct.name) do
-          # struct.members.each do |member|
-          #   # This may cause duplicate imports, we can remove it through autoflake
-          #   render_import out, member, file_name
-          # end
-
           out.indent do
             out.puts "alias #{@namespace}.{ \n"
             out.indent do
+              alias_list = ""
               struct.members.each_with_index do |m, i|
-                out.puts "#{type_reference m, m.name.camelize}#{comma_unless_last(i, struct.members)}\n"
+                name = type_reference m, m.name.camelize
+                alias_list += "#{name}#{comma_unless_last(i, struct.members)}\n" unless alias_list.include?(name)
               end
+              out.puts alias_list
             end
             out.puts "} \n\n"
 
@@ -946,7 +944,7 @@ module Xdrgen
         case type.sub_type
           when :optional
             "Optional, #{base_type}"
-            
+            # build_optional_typedef()
           when :array
             is_named, size = type.array_size
             size = is_named ? "\"#{size}\"" : size
