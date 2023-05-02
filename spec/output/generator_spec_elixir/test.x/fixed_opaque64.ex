@@ -14,21 +14,21 @@ defmodule MyXDR.FixedOpaque64 do
 
   defstruct [:opaque]
 
-  @max_size 64
+  @length 64
 
-  @opaque_spec XDR.FixedOpaque.new(nil, @max_size)
+  @opaque_spec XDR.FixedOpaque.new(nil, @length)
 
   @spec new(opaque :: binary()) :: t()
   def new(opaque), do: %__MODULE__{opaque: opaque}
 
   @impl true
   def encode_xdr(%__MODULE__{opaque: opaque}) do
-    XDR.FixedOpaque.encode_xdr(%XDR.FixedOpaque{opaque: opaque, max_size: @max_size})
+    XDR.FixedOpaque.encode_xdr(%XDR.FixedOpaque{opaque: opaque, length: @length})
   end
 
   @impl true
   def encode_xdr!(%__MODULE__{opaque: opaque}) do
-    XDR.FixedOpaque.encode_xdr!(%XDR.FixedOpaque{opaque: opaque, max_size: @max_size})
+    XDR.FixedOpaque.encode_xdr!(%XDR.FixedOpaque{opaque: opaque, length: @length})
   end
 
   @impl true

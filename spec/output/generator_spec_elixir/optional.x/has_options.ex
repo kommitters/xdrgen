@@ -12,7 +12,6 @@ defmodule MyXDR.HasOptions do
 
   alias MyXDR.{ 
     OptionalInt,
-    OptionalInt,
     OptionalArr
   } 
 

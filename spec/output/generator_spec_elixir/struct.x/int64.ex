@@ -10,4 +10,38 @@ defmodule MyXDR.Int64 do
 
   @behaviour XDR.Declaration
 
+  @type t :: %__MODULE__{datum: integer()}
+
+  defstruct [:datum]
+
+  @spec new(value :: integer()) :: t()
+  def new(value), do: %__MODULE__{datum: value}
+
+  @impl true
+  def encode_xdr(%__MODULE__{datum: value}) do
+    XDR.HyperInt.encode_xdr(%XDR.HyperInt{datum: value})
+  end
+
+  @impl true
+  def encode_xdr!(%__MODULE__{datum: value}) do
+    XDR.HyperInt.encode_xdr!(%XDR.HyperInt{datum: value})
+  end
+
+  @impl true
+  def decode_xdr(bytes, term \\ nil)
+
+  def decode_xdr(bytes, _term) do
+    case XDR.HyperInt.decode_xdr(bytes) do
+      {:ok, {%XDR.HyperInt{datum: value}, rest}} -> {:ok, {new(value), rest}}
+      error -> error
+    end
+  end
+
+  @impl true
+  def decode_xdr!(bytes, term \\ nil)
+
+  def decode_xdr!(bytes, _term) do
+    {%XDR.HyperInt{datum: value}, rest} = XDR.HyperInt.decode_xdr!(bytes)
+    {new(value), rest}
+  end
 end
