@@ -1,3 +1,16 @@
+__all__ = [
+  "Int",
+  "UInt",
+  "Float",
+  "DoubleFloat",
+  "HyperInt",
+  "HyperUInt",
+  "Bool",
+  "String",
+  "FixedOpaque ",
+  "VariableOpaque",
+]
+
 defmodule Int do
   @behaviour XDR.Declaration
 
@@ -10,20 +23,20 @@ defmodule Int do
 
   @impl true
   def encode_xdr(%__MODULE__{datum: int}) do
-    XDR.Int.encode_xdr(%XDR.Int{datum: int})
+    XDR.HyperInt.encode_xdr(%XDR.HyperInt{datum: int})
   end
 
   @impl true
   def encode_xdr!(%__MODULE__{datum: int}) do
-    XDR.Int.encode_xdr!(%XDR.Int{datum: int})
+    XDR.HyperInt.encode_xdr!(%XDR.HyperInt{datum: int})
   end
 
   @impl true
   def decode_xdr(bytes, term \\ nil)
 
   def decode_xdr(bytes, _term) do
-    case XDR.Int.decode_xdr(bytes) do
-      {:ok, {%XDR.Int{datum: int}, rest}} -> {:ok, {new(int), rest}}
+    case XDR.HyperInt.decode_xdr(bytes) do
+      {:ok, {%XDR.HyperInt{datum: int}, rest}} -> {:ok, {new(int), rest}}
       error -> error
     end
   end
@@ -32,7 +45,7 @@ defmodule Int do
   def decode_xdr!(bytes, term \\ nil)
 
   def decode_xdr!(bytes, _term) do
-    {%XDR.Int{datum: int}, rest} = XDR.Int.decode_xdr!(bytes)
+    {%XDR.HyperInt{datum: int}, rest} = XDR.HyperInt.decode_xdr!(bytes)
     {new(int), rest}
   end
 end
@@ -127,20 +140,20 @@ defmodule DoubleFloat do
 
   @impl true
   def encode_xdr(%__MODULE__{datum: float}) do
-    XDR.DoubleFloat.encode_xdr(%XDR.DoubleFloat{datum: float})
+    XDR.Float.encode_xdr(%XDR.Float{datum: float})
   end
 
   @impl true
   def encode_xdr!(%__MODULE__{datum: float}) do
-    XDR.DoubleFloat.encode_xdr!(%XDR.DoubleFloat{datum: float})
+    XDR.Float.encode_xdr!(%XDR.Float{datum: float})
   end
 
   @impl true
   def decode_xdr(bytes, term \\ nil)
 
   def decode_xdr(bytes, _term) do
-    case XDR.DoubleFloat.decode_xdr(bytes) do
-      {:ok, {%XDR.DoubleFloat{datum: float}, rest}} -> {:ok, {new(float), rest}}
+    case XDR.Float.decode_xdr(bytes) do
+      {:ok, {%XDR.Float{datum: float}, rest}} -> {:ok, {new(float), rest}}
       error -> error
     end
   end
@@ -149,7 +162,7 @@ defmodule DoubleFloat do
   def decode_xdr!(bytes, term \\ nil)
 
   def decode_xdr!(bytes, _term) do
-    {%XDR.DoubleFloat{datum: float}, rest} = XDR.DoubleFloat.decode_xdr!(bytes)
+    {%XDR.Float{datum: float}, rest} = XDR.Float.decode_xdr!(bytes)
     {new(float), rest}
   end
 end
@@ -245,14 +258,14 @@ defmodule String do
   @impl true
   def encode_xdr(%__MODULE__{value: value}) do
     value
-    |> XDR.String.new()
+    |> XDR.String.new(@max_length)
     |> XDR.String.encode_xdr()
   end
 
   @impl true
   def encode_xdr!(%__MODULE__{value: value}) do
     value
-    |> XDR.String.new()
+    |> XDR.String.new(@max_length)
     |> XDR.String.encode_xdr!()
   end
 
@@ -276,13 +289,12 @@ defmodule String do
 end
 
 defmodule FixedOpaque  do
+
   @behaviour XDR.Declaration
 
   @type t :: %__MODULE__{opaque: binary()}
 
   defstruct [:opaque]
-
-  @length = 4_294_967_295
 
   @opaque_spec XDR.FixedOpaque.new(nil, @length)
 
@@ -325,19 +337,19 @@ defmodule VariableOpaque do
 
   defstruct [:opaque]
 
-  @opaque_spec XDR.VariableOpaque.new(nil)
+  @opaque_spec XDR.VariableOpaque.new(nil, @max_size)
 
   @spec new(opaque :: binary()) :: t()
   def new(opaque), do: %__MODULE__{opaque: opaque}
 
   @impl true
   def encode_xdr(%__MODULE__{opaque: opaque}) do
-    XDR.VariableOpaque.encode_xdr(%XDR.VariableOpaque{opaque: opaque})
+    XDR.VariableOpaque.encode_xdr(%XDR.VariableOpaque{opaque: opaque, max_size: @max_size})
   end
 
   @impl true
   def encode_xdr!(%__MODULE__{opaque: opaque}) do
-    XDR.VariableOpaque.encode_xdr!(%XDR.VariableOpaque{opaque: opaque})
+    XDR.VariableOpaque.encode_xdr!(%XDR.VariableOpaque{opaque: opaque, max_size: @max_size})
   end
 
   @impl true

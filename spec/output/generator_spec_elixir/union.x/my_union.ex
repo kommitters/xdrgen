@@ -13,17 +13,17 @@ defmodule MyXDR.MyUnion do
   alias MyXDR.{
     UnionKey,
     Error,
-    build_type(MultiList)
+    MultiList
   }
 
   @arms [
     ERROR: Error,
-    MULTI: build_type(MultiList)
+    MULTI: MultiList
   ]
 
   @type value ::
           Error.t()
-          | build_type(MultiList).t()
+          | MultiList.t()
 
   @type t :: %__MODULE__{value: value(), type: UnionKey.t()}
 

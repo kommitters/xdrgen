@@ -14,29 +14,29 @@ defmodule MyXDR.MyStruct do
     Uint512,
     OptHash1,
     Int1,
-    build_type(UInt),
-    build_type(Float),
-    build_type(DoubleFloat),
-    build_type(Bool)
+    UInt,
+    Float,
+    DoubleFloat,
+    Bool
   } 
 
   @struct_spec XDR.Struct.new(
     field1: Uint512,
     field2: OptHash1,
     field3: Int1,
-    field4: build_type(UInt),
-    field5: build_type(Float),
-    field6: build_type(DoubleFloat),
-    field7: build_type(Bool)
+    field4: UInt,
+    field5: Float,
+    field6: DoubleFloat,
+    field7: Bool
   )
 
   @type field1 :: Uint512.t()
   @type field2 :: OptHash1.t()
   @type field3 :: Int1.t()
-  @type field4 :: build_type(UInt).t()
-  @type field5 :: build_type(Float).t()
-  @type field6 :: build_type(DoubleFloat).t()
-  @type field7 :: build_type(Bool).t()
+  @type field4 :: UInt.t()
+  @type field5 :: Float.t()
+  @type field6 :: DoubleFloat.t()
+  @type field7 :: Bool.t()
 
   @type t :: %__MODULE__{
     field1: field1(),
@@ -72,10 +72,10 @@ defmodule MyXDR.MyStruct do
     %Uint512{} = field1,
     %OptHash1{} = field2,
     %Int1{} = field3,
-    %build_type(UInt){} = field4,
-    %build_type(Float){} = field5,
-    %build_type(DoubleFloat){} = field6,
-    %build_type(Bool){} = field7
+    %UInt{} = field4,
+    %Float{} = field5,
+    %DoubleFloat{} = field6,
+    %Bool{} = field7
   ),
 
   do: %__MODULE__{

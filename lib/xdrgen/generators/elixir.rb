@@ -5,6 +5,7 @@ module Xdrgen
 
       def generate
         render_definitions(@top)
+        render_base_classes
       end
 
       private
@@ -20,7 +21,6 @@ module Xdrgen
 
       def render_definition(defn)
         render_nested_definitions(defn)
-        # render_base_classes
 
         case defn
         when AST::Definitions::Struct ;
@@ -102,11 +102,16 @@ module Xdrgen
         out = @output.open(file_name)
 
         render_define_block(out, struct.name) do
+          # struct.members.each do |member|
+          #   # This may cause duplicate imports, we can remove it through autoflake
+          #   render_import out, member, file_name
+          # end
+
           out.indent do
             out.puts "alias #{@namespace}.{ \n"
             out.indent do
               struct.members.each_with_index do |m, i|
-                out.puts "#{type_reference m.type}#{comma_unless_last(i, struct.members)}\n"
+                out.puts "#{type_reference m, m.name.camelize}#{comma_unless_last(i, struct.members)}\n"
               end
             end
             out.puts "} \n\n"
@@ -114,13 +119,13 @@ module Xdrgen
             out.puts "@struct_spec XDR.Struct.new("
             out.indent do
               struct.members.each_with_index do |m, i|
-                out.puts "#{m.name}: #{type_reference m.type}#{comma_unless_last(i, struct.members)}"
+                out.puts "#{m.name}: #{type_reference m, m.name.camelize}#{comma_unless_last(i, struct.members)}"
               end
             end
             out.puts ")\n\n"
 
             struct.members.each_with_index do |m, i|
-              out.puts "@type #{m.name} :: #{type_reference m.type}.t()"
+              out.puts "@type #{m.name} :: #{type_reference m, m.name.camelize}.t()"
             end
             out.puts "\n"
 
@@ -151,7 +156,7 @@ module Xdrgen
             out.puts "def new(\n"
             out.indent do
               struct.members.each_with_index do |m, i|
-                out.puts "%#{type_reference m.type}{} = #{m.name}#{comma_unless_last(i, struct.members)}"
+                out.puts "%#{type_reference m, m.name.camelize}{} = #{m.name}#{comma_unless_last(i, struct.members)}"
               end
             end
             out.puts "),\n\n"
@@ -342,9 +347,9 @@ module Xdrgen
           out.indent do
             out.puts "alias #{@namespace}.{\n"
             out.indent do
-              out.puts "#{type_reference union.discriminant.type},"
+              out.puts "#{type_reference union.discriminant, union.name.camelize},"
               union.normal_arms.each_with_index do |arm, i|
-                arm_name = arm.void? ? "Void" : "#{type_reference arm.type}"
+                arm_name = arm.void? ? "Void" : "#{type_reference arm, arm.name.camelize}"
 
                 arm.cases.each do |acase|
                   out.puts "#{arm_name}#{comma_unless_last(i, union.normal_arms)}"
@@ -356,7 +361,7 @@ module Xdrgen
             out.puts "@arms ["
             out.indent do
               union.normal_arms.each_with_index do |arm, i|
-                arm_name = arm.void? ? "Void" : "#{type_reference arm.type}"
+                arm_name = arm.void? ? "Void" : "#{type_reference arm, arm.name.camelize}"
 
                 arm.cases.each do |acase|
                   switch = if acase.value.is_a?(AST::Identifier)
@@ -376,20 +381,20 @@ module Xdrgen
               union.normal_arms.each_with_index do |arm, i|
                 next if arm.void?
                 if i == 0
-                  out.puts "#{type_reference arm.type}.t()"
+                  out.puts "#{type_reference arm, arm.name.camelize}.t()"
                 else
-                  out.puts "| #{type_reference arm.type}.t()"
+                  out.puts "| #{type_reference arm, arm.name.camelize}.t()"
                 end
               end
             end
             out.puts "\n"
 
-            out.puts "@type t :: %__MODULE__{value: value(), type: #{type_reference union.discriminant.type}.t()}\n\n"
+            out.puts "@type t :: %__MODULE__{value: value(), type: #{type_reference union.discriminant, union.name.camelize}.t()}\n\n"
 
             out.puts "defstruct [:value, :type]\n\n"
 
-            out.puts "@spec new(value :: value(), type :: #{type_reference union.discriminant.type}.t()) :: t()\n"
-            out.puts "def new(value, %#{type_reference union.discriminant.type}{} = type), do: %__MODULE__{value: value, type: type}\n\n"
+            out.puts "@spec new(value :: value(), type :: #{type_reference union.discriminant, union.name.camelize}.t()) :: t()\n"
+            out.puts "def new(value, %#{type_reference union.discriminant, union.name.camelize}{} = type), do: %__MODULE__{value: value, type: type}\n\n"
 
             out.puts "@impl true"
             out.puts "def encode_xdr(%__MODULE__{value: value, type: type}) do\n"
@@ -437,7 +442,7 @@ module Xdrgen
             out.puts "defp union_spec do"
             out.indent do
               out.puts "nil\n"
-              out.puts "|> #{type_reference union.discriminant.type}.new()\n"
+              out.puts "|> #{type_reference union.discriminant, union.name.camelize}.new()\n"
               out.puts "|> XDR.Union.new(@arms)\n"
             end
             out.puts "end\n"
@@ -471,10 +476,23 @@ module Xdrgen
       # this can be a string to reference a custom type
       # or a build_type call like build_type(VariableOpaque, 100)
       # args for build_type can be created with build_type_args
-      def type_reference(type)
-        build_args = build_type_args(type)
+      def type_reference(decl, container_name)
+        # build_args = type_string(type)
 
-        build_args === "#{name type}" ? build_args : "build_type(#{build_args})"
+        # build_args === "#{name type}" ? build_args : "build_type(#{build_args})"
+        type_hint = type_string decl.type
+        if type_hint == container_name
+          type_hint = "#{type_hint}"
+        end
+
+        case decl.type.sub_type
+        when :optional
+          "Optional#{type_hint}"
+        when :var_array, :array
+          "#{type_hint}List"
+        else
+          type_hint
+        end
       end
 
       def comma_unless_last(index, collection)
@@ -543,6 +561,43 @@ module Xdrgen
             "#{base_type}List"
           else
             raise "Unknown sub_type: #{type.sub_type}"
+        end
+      end
+
+      def type_string(type)
+        case type
+          when AST::Typespecs::Bool
+            "Bool"
+          when AST::Typespecs::Double
+            "DoubleFloat"
+          when AST::Typespecs::Float
+            "Float"
+          when AST::Typespecs::Hyper
+            "HyperInt"
+          when AST::Typespecs::Int
+            "Int"
+          when AST::Typespecs::Opaque
+            if type.fixed?
+              "FixedOpaque#{type.size}"
+            else
+              type.size ? "VariableOpaque#{type.size}" : "VariableOpaque"
+            end
+          when AST::Typespecs::Quadruple
+            raise "no quadruple support in elixir"
+          when AST::Typespecs::String
+            "String#{type.size}"
+          when AST::Typespecs::UnsignedHyper
+            "HyperUInt"
+          when AST::Typespecs::UnsignedInt
+            "UInt"
+          when AST::Typespecs::Simple
+            "#{name type}"
+          when AST::Definitions::Base
+            "#{name type}"
+          when AST::Concerns::NestedDefinition
+            "#{name type}"
+          else
+            raise "Unknown reference type: #{type.class.name}, #{type.class.ancestors}"
         end
       end
 
@@ -828,56 +883,22 @@ module Xdrgen
         out.puts "end\n"
       end
 
-      # def render_base_classes
-      #   file_name = "base.ex"
-      #   out = @output.open(file_name)
-      #   base_py_content = IO.read(__dir__ + "/base.ex")
-      #   out.puts base_py_content
-      #   out.close
-      # end
+      def render_base_classes
+        file_name = "base.ex"
+        out = @output.open(file_name)
+        base_py_content = IO.read(__dir__ + "/base.ex")
+        new_base_file = base_py_content.gsub("defmodule ", "defmodule #{@namespace}.")
+        out.puts new_base_file
+        out.close
+      end
 
       def build_typedef(out, typedef)
         type = typedef.declaration.type
-        base_ref = case type
-          when AST::Typespecs::Bool
-            "Bool"
-          when AST::Typespecs::Double
-            build_number_typedef(out, "float_number", "DoubleFloat", "float")
-          when AST::Typespecs::Float
-            build_number_typedef(out, "float_number", "Float", "float")
-          when AST::Typespecs::Hyper
-            build_number_typedef(out, "integer", "HyperInt", "datum")
-          when AST::Typespecs::Int
-            build_number_typedef(out, "integer", "Int", "datum")
-          when AST::Typespecs::Opaque
-            if type.fixed?
-              build_opaque_typedef(out, "FixedOpaque", type.size)
-            else
-              type.size ? build_opaque_typedef(out, "VariableOpaque", type.size) : build_opaque_typedef(out, "VariableOpaque")
-            end
-          when AST::Typespecs::Quadruple
-            raise "no quadruple support in elixir"
-          when AST::Typespecs::String
-            build_string_typedef(out, typedef, "String.t", "String")
-          when AST::Typespecs::UnsignedHyper
-            build_number_typedef(out, "non_neg_integer", "HyperUInt", "datum")
-          when AST::Typespecs::UnsignedInt
-            build_number_typedef(out, "non_neg_integer", "UInt", "datum")
-          when AST::Typespecs::Simple
-            "#{name type}"
-          when AST::Definitions::Base
-            "#{name type}"
-          when AST::Concerns::NestedDefinition
-            "#{name type}"
-          else
-            raise "Unknown reference type: #{type.class.name}, #{type.class.ancestors}"
-        end
-
-        base_type = base_ref === "#{name type}" ? base_ref : "buid_type(base_ref)"
+        base_type = type_string(type)
 
         case type.sub_type
           when :simple
-            base_ref
+            base_type
           when :optional
             "Optional, #{base_type}"
           when :array
@@ -889,7 +910,49 @@ module Xdrgen
             size = is_named ? "\"#{size}\"" : (size || MAX_INT)
             build_list_typedef(out, base_type, size, "VariableArray")
           else
-            raise "Unknown sub_type: #{type.sub_type}"
+            case type
+              when AST::Typespecs::Bool
+                "Bool"
+              when AST::Typespecs::Double
+                build_number_typedef(out, "float_number", "DoubleFloat", "float")
+                "DoubleFloat"
+              when AST::Typespecs::Float
+                build_number_typedef(out, "float_number", "Float", "float")
+                "Float"
+              when AST::Typespecs::Hyper
+                build_number_typedef(out, "integer", "HyperInt", "datum")
+                "HyperInt"
+              when AST::Typespecs::Int
+                build_number_typedef(out, "integer", "Int", "datum")
+                "Int"
+              when AST::Typespecs::Opaque
+                if type.fixed?
+                  build_opaque_typedef(out, "FixedOpaque", type.size)
+                  "FixedOpaque"
+                else
+                  type.size ? build_opaque_typedef(out, "VariableOpaque", type.size) : build_opaque_typedef(out, "VariableOpaque")
+                  "VariableOpque"
+                end
+              when AST::Typespecs::Quadruple
+                raise "no quadruple support in elixir"
+              when AST::Typespecs::String
+                build_string_typedef(out, typedef, "String.t", "String")
+                "String"
+              when AST::Typespecs::UnsignedHyper
+                build_number_typedef(out, "non_neg_integer", "HyperUInt", "datum")
+                "HyperUInt"
+              when AST::Typespecs::UnsignedInt
+                build_number_typedef(out, "non_neg_integer", "UInt", "datum")
+                "UInt"
+              when AST::Typespecs::Simple
+                "#{name type}"
+              when AST::Definitions::Base
+                "#{name type}"
+              when AST::Concerns::NestedDefinition
+                "#{name type}"
+              else
+                raise "Unknown reference type: #{type.class.name}, #{type.class.ancestors}"
+            end
         end
       end
     end

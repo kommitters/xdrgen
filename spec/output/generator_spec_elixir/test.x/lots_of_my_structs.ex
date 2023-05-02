@@ -11,14 +11,14 @@ defmodule MyXDR.LotsOfMyStructs do
   @behaviour XDR.Declaration
 
   alias MyXDR.{ 
-    build_type(MyStructList)
+    MyStructList
   } 
 
   @struct_spec XDR.Struct.new(
-    members: build_type(MyStructList)
+    members: MyStructList
   )
 
-  @type members :: build_type(MyStructList).t()
+  @type members :: MyStructList.t()
 
   @type t :: %__MODULE__{
     members: members()
@@ -33,7 +33,7 @@ defmodule MyXDR.LotsOfMyStructs do
   ) :: t()
 
   def new(
-    %build_type(MyStructList){} = members
+    %MyStructList{} = members
   ),
 
   do: %__MODULE__{
