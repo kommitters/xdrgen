@@ -11,26 +11,26 @@ defmodule MyXDR.MyStruct do
   @behaviour XDR.Declaration
 
   alias MyXDR.{ 
-    build_type(Int),
+    Int,
     Int64,
-    build_type(FixedOpaque, 10),
-    build_type(XDR.String, ),
-    build_type(XDR.String, 100)
+    FixedOpaque10,
+    String,
+    String100
   } 
 
   @struct_spec XDR.Struct.new(
-    someInt: build_type(Int),
+    someInt: Int,
     aBigInt: Int64,
-    someOpaque: build_type(FixedOpaque, 10),
-    someString: build_type(XDR.String, ),
-    maxString: build_type(XDR.String, 100)
+    someOpaque: FixedOpaque10,
+    someString: String,
+    maxString: String100
   )
 
-  @type someInt :: build_type(Int).t()
+  @type someInt :: Int.t()
   @type aBigInt :: Int64.t()
-  @type someOpaque :: build_type(FixedOpaque, 10).t()
-  @type someString :: build_type(XDR.String, ).t()
-  @type maxString :: build_type(XDR.String, 100).t()
+  @type someOpaque :: FixedOpaque10.t()
+  @type someString :: String.t()
+  @type maxString :: String100.t()
 
   @type t :: %__MODULE__{
     someInt: someInt(),
@@ -57,11 +57,11 @@ defmodule MyXDR.MyStruct do
   ) :: t()
 
   def new(
-    %build_type(Int){} = someInt,
+    %Int{} = someInt,
     %Int64{} = aBigInt,
-    %build_type(FixedOpaque, 10){} = someOpaque,
-    %build_type(XDR.String, ){} = someString,
-    %build_type(XDR.String, 100){} = maxString
+    %FixedOpaque10{} = someOpaque,
+    %String{} = someString,
+    %String100{} = maxString
   ),
 
   do: %__MODULE__{

@@ -886,7 +886,7 @@ module Xdrgen
       def render_base_classes
         file_name = "base.ex"
         out = @output.open(file_name)
-        base_py_content = IO.read(__dir__ + "/base.ex")
+        base_py_content = IO.read(__dir__ + "/elixir/base.ex")
         new_base_file = base_py_content.gsub("defmodule ", "defmodule #{@namespace}.")
         out.puts new_base_file
         out.close
