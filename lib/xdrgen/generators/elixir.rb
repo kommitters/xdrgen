@@ -648,6 +648,53 @@ module Xdrgen
         out.puts "end\n"
       end
 
+      def build_bool_typedef(out, number_type, type, attribute)
+        out.puts "@type t :: %__MODULE__{#{attribute}: #{number_type}()}\n\n"
+
+        out.puts "defstruct [:#{attribute}]\n\n"
+
+        out.puts "@spec new(value :: #{number_type}()) :: t()\n"
+        out.puts "def new(value), do: %__MODULE__{#{attribute}: value}\n\n"
+
+        out.puts "@impl true"
+        out.puts "def encode_xdr(%__MODULE__{#{attribute}: value}) do\n"
+        out.indent do
+          out.puts "XDR.#{type}.encode_xdr(%XDR.#{type}{identifier: value})\n"
+        end
+        out.puts "end\n\n"
+
+        out.puts "@impl true"
+        out.puts "def encode_xdr!(%__MODULE__{#{attribute}: value}) do\n"
+        out.indent do
+          out.puts "XDR.#{type}.encode_xdr!(%XDR.#{type}{identifier: value})\n"
+        end
+        out.puts "end\n\n"
+
+        out.puts "@impl true"
+        out.puts "def decode_xdr(bytes, term \\\\ nil)\n\n"
+
+        out.puts "def decode_xdr(bytes, _term) do\n"
+        out.indent do
+          out.puts "case XDR.#{type}.decode_xdr(bytes) do\n"
+          out.indent do
+            out.puts "{:ok, {%XDR.#{type}{identifier: value}, rest}} -> {:ok, {new(value), rest}}\n"
+            out.puts "error -> error\n"
+          end
+          out.puts "end\n"
+        end
+        out.puts "end\n\n"
+
+        out.puts "@impl true"
+        out.puts "def decode_xdr!(bytes, term \\\\ nil)\n\n"
+
+        out.puts "def decode_xdr!(bytes, _term) do\n"
+        out.indent do
+          out.puts "{%XDR.#{type}{identifier: value}, rest} = XDR.#{type}.decode_xdr!(bytes)\n"
+          out.puts "{new(value), rest}\n"
+        end
+        out.puts "end\n"
+      end
+
       def build_string_typedef(out, typedef, string_type, module_name)
         out.puts "@type t :: %__MODULE__{value: #{string_type}()}\n\n"
 
@@ -724,9 +771,9 @@ module Xdrgen
 
               out.puts "defstruct [:opaque]\n\n"
 
-              out.puts "@#{type.downcase == "opaque" ? "length" : "max_size"} #{size}\n\n"
+              out.puts "@#{type.downcase == "fixedopaque" ? "length" : "max_size"} #{size}\n\n"
 
-              out.puts "@opaque_spec XDR.#{type}.new(nil, @#{type.downcase == "opaque" ? "length" : "max_size"})\n\n"
+              out.puts "@opaque_spec XDR.#{type}.new(nil, @#{type.downcase == "fixedopaque" ? "length" : "max_size"})\n\n"
 
               out.puts "@spec new(opaque :: binary()) :: t()\n"
               out.puts "def new(opaque), do: %__MODULE__{opaque: opaque}\n\n"
@@ -734,14 +781,14 @@ module Xdrgen
               out.puts "@impl true"
               out.puts "def encode_xdr(%__MODULE__{opaque: opaque}) do\n"
               out.indent do
-                out.puts "XDR.#{type}.encode_xdr(%XDR.#{type}{opaque: opaque, #{type.downcase == "opaque" ? "length: @length" : "max_size: @max_size"}})\n"
+                out.puts "XDR.#{type}.encode_xdr(%XDR.#{type}{opaque: opaque, #{type.downcase == "fixedopaque" ? "length: @length" : "max_size: @max_size"}})\n"
               end
               out.puts "end\n\n"
 
               out.puts "@impl true"
               out.puts "def encode_xdr!(%__MODULE__{opaque: opaque}) do\n"
               out.indent do
-                out.puts "XDR.#{type}.encode_xdr!(%XDR.#{type}{opaque: opaque, #{type.downcase == "opaque" ? "length: @length" : "max_size: @max_size"}})\n"
+                out.puts "XDR.#{type}.encode_xdr!(%XDR.#{type}{opaque: opaque, #{type.downcase == "fixedopaque" ? "length: @length" : "max_size: @max_size"}})\n"
               end
               out.puts "end\n\n"
 
@@ -897,10 +944,9 @@ module Xdrgen
         base_type = type_string(type)
 
         case type.sub_type
-          when :simple
-            base_type
           when :optional
             "Optional, #{base_type}"
+            
           when :array
             is_named, size = type.array_size
             size = is_named ? "\"#{size}\"" : size
@@ -912,6 +958,7 @@ module Xdrgen
           else
             case type
               when AST::Typespecs::Bool
+                build_bool_typedef(out, "boolean", "Bool", "bool")
                 "Bool"
               when AST::Typespecs::Double
                 build_number_typedef(out, "float_number", "DoubleFloat", "float")
