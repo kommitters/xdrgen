@@ -351,12 +351,14 @@ module Xdrgen
       def render_union(union)
         file_name = "#{union.name.underscore.downcase}.ex"
         out = @output.open(file_name)
+        union_name_camelize = union.name.camelize
+        union_discriminant = union.discriminant
 
         render_define_block_enum_type(out, union.name) do 
           out.indent do
             out.puts "alias #{@namespace}.{\n"
             out.indent do
-              out.puts "#{type_reference union.discriminant, union.name.camelize},"
+              out.puts "#{type_reference union_discriminant, union_name_camelize},"
               union.arms.each_with_index do |arm, i|
                 arm_name = arm.void? ? "Void" : "#{type_reference arm.declaration, arm.name.camelize}"
                 out.puts "#{arm_name}#{comma_unless_last(i, union.arms)}"
@@ -399,12 +401,12 @@ module Xdrgen
             end
             out.puts "\n"
 
-            out.puts "@type t :: %__MODULE__{value: value(), type: #{type_reference union.discriminant, union.name.camelize}.t()}\n\n"
+            out.puts "@type t :: %__MODULE__{value: value(), type: #{type_reference union_discriminant, union_name_camelize}.t()}\n\n"
 
             out.puts "defstruct [:value, :type]\n\n"
 
-            out.puts "@spec new(value :: value(), type :: #{type_reference union.discriminant, union.name.camelize}.t()) :: t()\n"
-            out.puts "def new(value, %#{type_reference union.discriminant, union.name.camelize}{} = type), do: %__MODULE__{value: value, type: type}\n\n"
+            out.puts "@spec new(value :: value(), type :: #{type_reference union_discriminant, union_name_camelize}.t()) :: t()\n"
+            out.puts "def new(value, %#{type_reference union_discriminant, union_name_camelize}{} = type), do: %__MODULE__{value: value, type: type}\n\n"
 
             out.puts "@impl true"
             out.puts "def encode_xdr(%__MODULE__{value: value, type: type}) do\n"
@@ -452,7 +454,7 @@ module Xdrgen
             out.puts "defp union_spec do"
             out.indent do
               out.puts "nil\n"
-              out.puts "|> #{type_reference union.discriminant, union.name.camelize}.new()\n"
+              out.puts "|> #{type_reference union_discriminant, union_name_camelize}.new()\n"
               out.puts "|> XDR.Union.new(@arms)\n"
             end
             out.puts "end\n"
@@ -482,9 +484,6 @@ module Xdrgen
         name(member).underscore.upcase
       end
 
-      # this can be a string to reference a custom type
-      # or a build_type call like build_type(VariableOpaque, 100)
-      # args for build_type can be created with build_type_args
       def type_reference(decl, container_name)
         type_hint = type_string decl.type
 
@@ -515,59 +514,6 @@ module Xdrgen
           ""
         else
           ", "
-        end
-      end
-
-      # the args to supply build_type (or define_type(name, ...args))
-      def build_type_args(type)
-        base_ref = case type
-          when AST::Typespecs::Bool
-            "Bool"
-          when AST::Typespecs::Double
-            "DoubleFloat"
-          when AST::Typespecs::Float
-            "Float"
-          when AST::Typespecs::Hyper
-            "HyperInt"
-          when AST::Typespecs::Int
-            "Int"
-          when AST::Typespecs::Opaque
-            if type.fixed?
-              "FixedOpaque, #{type.size}"
-            else
-              type.size ? "VariableOpaque, #{type.size}" : "VariableOpaque"
-            end
-          when AST::Typespecs::Quadruple
-            raise "no quadruple support in elixir"
-          when AST::Typespecs::String
-            "XDR.String, #{type.size}"
-          when AST::Typespecs::UnsignedHyper
-            "HyperUInt"
-          when AST::Typespecs::UnsignedInt
-            "UInt"
-          when AST::Typespecs::Simple
-            "#{name type}"
-          when AST::Definitions::Base
-            "#{name type}"
-          when AST::Concerns::NestedDefinition
-            "#{name type}"
-          else
-            raise "Unknown reference type: #{type.class.name}, #{type.class.ancestors}"
-        end
-
-        base_type = base_ref === "#{name type}" ? base_ref : "buid_type(base_ref)"
-
-        case type.sub_type
-          when :simple
-            base_ref
-          when :optional
-            "Optional#{base_type}"
-          when :array
-            "#{base_type}List"
-          when :var_array
-            "#{base_type}List"
-          else
-            raise "Unknown sub_type: #{type.sub_type}"
         end
       end
 
