@@ -346,12 +346,9 @@ module Xdrgen
             out.puts "alias #{@namespace}.{\n"
             out.indent do
               out.puts "#{type_reference union.discriminant, union.name.camelize},"
-              union.normal_arms.each_with_index do |arm, i|
-                arm_name = arm.void? ? "Void" : "#{type_reference arm, arm.name.camelize}"
-
-                arm.cases.each do |acase|
-                  out.puts "#{arm_name}#{comma_unless_last(i, union.normal_arms)}"
-                end
+              union.arms.each_with_index do |arm, i|
+                arm_name = arm.void? ? "Void" : "#{type_reference arm.declaration, arm.name.camelize}"
+                out.puts "#{arm_name}#{comma_unless_last(i, union.arms)}"
               end
             end
             out.puts "}\n\n"
@@ -359,30 +356,38 @@ module Xdrgen
             out.puts "@arms ["
             out.indent do
               union.normal_arms.each_with_index do |arm, i|
-                arm_name = arm.void? ? "Void" : "#{type_reference arm, arm.name.camelize}"
-
+                arm_name = arm.void? ? "Void" : "#{type_reference arm.declaration, arm.name.camelize}"
+                
                 arm.cases.each do |acase|
                   switch = if acase.value.is_a?(AST::Identifier)
                     "#{member_name(acase.value)}"
                   else
                     acase.value.text_value
                   end
-
-                  out.puts "#{switch}: #{arm_name}#{comma_unless_last(i, union.normal_arms)}"
+                  
+                  out.puts "#{switch}: #{arm_name}#{comma_unless_last(i, union.arms)}"
                 end
+              end
+
+              if union.default_arm.present?
+                out.puts "default: #{type_reference union.default_arm.declaration, union.default_arm.name.camelize }"
               end
             end
             out.puts "]\n\n"
 
             out.puts "@type value ::"
             out.indent(4) do
-              union.normal_arms.each_with_index do |arm, i|
-                next if arm.void?
+              union.arms.each_with_index do |arm, i|
+                arm_name = arm.void? ? "Void" : "#{type_reference arm.declaration, arm.name.camelize}"
                 if i == 0
-                  out.puts "#{type_reference arm, arm.name.camelize}.t()"
+                  out.puts "#{arm_name}.t()"
                 else
-                  out.puts "| #{type_reference arm, arm.name.camelize}.t()"
+                  out.puts "| #{arm_name}.t()"
                 end
+              end
+
+              if union.default_arm.present?
+                out.puts "| any()"
               end
             end
             out.puts "\n"
