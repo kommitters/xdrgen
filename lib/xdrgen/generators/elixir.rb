@@ -398,6 +398,11 @@ module Xdrgen
                   out.puts "| #{arm_name}.t()"
                 end
               end
+
+              if union.default_arm.present?
+                out.puts "| any()"
+              end
+
             end
             out.puts "\n"
 

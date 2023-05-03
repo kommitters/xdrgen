@@ -24,6 +24,7 @@ defmodule MyXDR.NestedUnion do
   @type value ::
           Void.t()
           | Int.t()
+          | any()
 
   @type t :: %__MODULE__{value: value(), type: Color.t()}
 
