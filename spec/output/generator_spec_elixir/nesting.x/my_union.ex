@@ -12,8 +12,8 @@ defmodule MyXDR.MyUnion do
 
   alias MyXDR.{
     UnionKey,
-    MyUnionOne,
-    MyUnionTwo,
+    One,
+    Two,
     Void
   }
 

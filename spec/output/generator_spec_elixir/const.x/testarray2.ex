@@ -10,38 +10,50 @@ defmodule MyXDR.Testarray2 do
 
   @behaviour XDR.Declaration
 
-  @type t :: %__MODULE__{datum: integer()}
+  alias MyXDR.Int
 
-  defstruct [:datum]
+  @max_length "FOO"
 
-  @spec new(value :: integer()) :: t()
-  def new(value), do: %__MODULE__{datum: value}
+  @array_type Int
+
+  @array_spec %{type: @array_type, max_length: @max_length}
+
+  @type t :: %__MODULE__{items: list(Int.t())}
+
+  defstruct [:items]
+
+  @spec new(items :: list(Int.t())) :: t()
+  def new(items), do: %__MODULE__{items: items}
 
   @impl true
-  def encode_xdr(%__MODULE__{datum: value}) do
-    XDR.Int.encode_xdr(%XDR.Int{datum: value})
+  def encode_xdr(%__MODULE__{items: items}) do
+    items
+    |> XDR.VariableArray.new(@array_type, @max_length)
+    |> XDR.VariableArray.encode_xdr()
   end
 
   @impl true
-  def encode_xdr!(%__MODULE__{datum: value}) do
-    XDR.Int.encode_xdr!(%XDR.Int{datum: value})
+  def encode_xdr!(%__MODULE__{items: items}) do
+    items
+    |> XDR.VariableArray.new(@array_type, @max_length)
+    |> XDR.VariableArray.encode_xdr!()
   end
 
   @impl true
-  def decode_xdr(bytes, term \\ nil)
+  def decode_xdr(bytes, spec \\ @array_spec)
 
-  def decode_xdr(bytes, _term) do
-    case XDR.Int.decode_xdr(bytes) do
-      {:ok, {%XDR.Int{datum: value}, rest}} -> {:ok, {new(value), rest}}
+  def decode_xdr(bytes, spec) do
+    case XDR.VariableArray.decode_xdr(bytes, spec) do
+      {:ok, {items, rest}} -> {:ok, {new(items), rest}}
       error -> error
     end
   end
 
   @impl true
-  def decode_xdr!(bytes, term \\ nil)
+  def decode_xdr!(bytes, spec \\ @array_spec)
 
-  def decode_xdr!(bytes, _term) do
-    {%XDR.Int{datum: value}, rest} = XDR.Int.decode_xdr!(bytes)
-    {new(value), rest}
+  def decode_xdr!(bytes, spec) do
+    {items, rest} = XDR.{list_type}.decode_xdr!(bytes, spec)
+    {new(items), rest}
   end
 end

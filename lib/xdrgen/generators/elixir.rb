@@ -78,18 +78,13 @@ module Xdrgen
       end
 
       def render_typedef(typedef)
-        name = typedef.declaration.type.sub_type == :var_array ? "#{typedef.name.downcase}list" : typedef.name.downcase
-
         type = typedef.declaration.type.sub_type
+        type_name = type == :optional ? "Optional#{typedef.name.capitalize}"  : typedef.name.downcase
 
-        if type == :optional
-          name = "Optional#{name}"
-        end
-
-        file_name = "#{name.underscore}.ex"
+        file_name = "#{type_name.underscore}.ex"
         out = @output.open(file_name)
 
-        render_define_block(out, type_name.underscore.downcase) do 
+        render_define_block(out, type_name) do 
           out.indent do
             build_typedef(out, typedef)
           end

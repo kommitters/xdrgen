@@ -13,7 +13,7 @@ defmodule MyXDR.NestedUnion do
   alias MyXDR.{
     Color,
     Void,
-    Int
+    Blah2
   }
 
   @arms [
