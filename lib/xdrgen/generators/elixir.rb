@@ -78,9 +78,15 @@ module Xdrgen
       end
 
       def render_typedef(typedef)
-        type_name = typedef.declaration.type.sub_type == :var_array ? "#{typedef.name}list" : typedef.name
+        name = typedef.declaration.type.sub_type == :var_array ? "#{typedef.name.downcase}list" : typedef.name.downcase
 
-        file_name = "#{type_name.underscore.downcase}.ex"
+        type = typedef.declaration.type.sub_type
+
+        if type == :optional
+          name = "Optional#{name}"
+        end
+
+        file_name = "#{name.underscore}.ex"
         out = @output.open(file_name)
 
         render_define_block(out, type_name.underscore.downcase) do 
@@ -331,7 +337,7 @@ module Xdrgen
             out.indent do
               out.puts "#{type_reference union_discriminant, union_name_camelize},"
               union.arms.each_with_index do |arm, i|
-                arm_name = arm.void? ? "Void" : "#{type_reference arm.declaration, arm.name.camelize}"
+                arm_name = arm.void? ? "Void" : "#{arm.name.camelize}"
                 out.puts "#{arm_name}#{comma_unless_last(i, union.arms)}"
               end
             end
@@ -696,6 +702,66 @@ module Xdrgen
         out.puts "end\n"
       end
 
+      def build_optional_typedef(out, type, attribute)
+        out.puts "alias #{@namespace}.#{type}\n\n"
+
+        out.puts "@optional_spec XDR.Optional.new(#{type})\n\n"
+
+        out.puts "@type #{attribute} :: #{type}.t() | nil\n\n"
+
+        out.puts "@type t :: %__MODULE__{#{attribute}: #{attribute}()}\n\n"
+
+        out.puts "defstruct [:#{attribute}]\n\n"
+
+
+        out.puts "@spec new(#{attribute} :: #{attribute}()) :: t()\n"
+        out.puts "def new(#{attribute} \\\\ nil), do: %__MODULE__{#{attribute}: #{attribute}}\n\n"
+
+        out.puts "@impl true"
+        out.puts "def encode_xdr(%__MODULE__{#{attribute}: #{attribute}}) do\n"
+        out.indent do
+          out.puts "#{attribute}"
+          out.puts "|> XDR.Optional.new()"
+          out.puts "|> XDR.Optional.encode_xdr()"
+        end
+        out.puts "end\n\n"
+
+        out.puts "@impl true"
+        out.puts "def encode_xdr!(%__MODULE__{#{attribute}: #{attribute}}) do\n"
+        out.indent do
+          out.puts "#{attribute}"
+          out.puts "|> XDR.Optional.new()"
+          out.puts "|> XDR.Optional.encode_xdr!()"
+        end
+        out.puts "end\n\n"
+
+        out.puts "@impl true"
+        out.puts "def decode_xdr(bytes, optional_spec \\\\ @optional_spec)\n\n"
+
+        out.puts "def decode_xdr(bytes, optional_spec) do\n"
+        out.indent do
+          out.puts "case XDR.Optional.decode_xdr(bytes, optional_spec) do\n"
+          out.indent do
+            out.puts "{:ok, {%XDR.Optional{type: #{attribute}}, rest}} -> {:ok, {new(#{attribute}), rest}}\n"
+            out.puts "{:ok, {nil, rest}} -> {:ok, {new(), rest}}"
+            out.puts "error -> error\n"
+          end
+          out.puts "end\n"
+        end
+        out.puts "end\n\n"
+
+        out.puts "@impl true"
+        out.puts "def decode_xdr!(bytes, optional_spec \\\\ @optional_spec)\n\n"
+
+        out.puts "def decode_xdr!(bytes, optional_spec) do\n"
+        out.indent do
+          out.puts "{%XDR.Optional{identifier: #{attribute}}, rest} = XDR.Optional.decode_xdr!(bytes)\n"
+          out.puts "{new(#{attribute}), rest}\n"
+          out.puts "{nil, rest} -> {new(), rest}"
+        end
+        out.puts "end\n"
+      end
+
       def build_opaque_typedef(out_main, type, xdr_module, size = nil)
         name = "#{type}#{size}"
 
@@ -871,11 +937,12 @@ module Xdrgen
       def build_typedef(out, typedef)
         type = typedef.declaration.type
         base_type = type_string(type)
+        name = typedef.name.downcase
 
         case type.sub_type
           when :optional
-            "Optional#{base_type}"
-            # build_optional_typedef()
+            "Optional, #{base_type}"
+            build_optional_typedef(out, name.capitalize, name)
           when :array
             is_named, size = type.array_size
             size = is_named ? "\"#{size}\"" : size
