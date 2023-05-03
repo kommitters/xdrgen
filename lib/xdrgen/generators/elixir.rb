@@ -529,7 +529,7 @@ module Xdrgen
             "Int"
           when AST::Typespecs::Opaque
             if type.fixed?
-              "FixedOpaque, #{type.size}"
+              "Opaque, #{type.size}"
             else
               type.size ? "VariableOpaque, #{type.size}" : "VariableOpaque"
             end
@@ -581,7 +581,7 @@ module Xdrgen
             "Int"
           when AST::Typespecs::Opaque
             if type.fixed?
-              "FixedOpaque#{type.size}"
+              "Opaque#{type.size}"
             else
               type.size ? "VariableOpaque#{type.size}" : "VariableOpaque"
             end
@@ -761,7 +761,7 @@ module Xdrgen
         out.puts "end\n"
       end
 
-      def build_opaque_typedef(out_main, type, size = nil)
+      def build_opaque_typedef(out_main, type, xdr_module, size = nil)
         name = "#{type}#{size}"
 
         unless size.nil?
@@ -774,9 +774,9 @@ module Xdrgen
 
               out.puts "defstruct [:opaque]\n\n"
 
-              out.puts "@#{type.downcase == "fixedopaque" ? "length" : "max_size"} #{size}\n\n"
+              out.puts "@#{type.downcase == "opaque" ? "length" : "max_size"} #{size}\n\n"
 
-              out.puts "@opaque_spec XDR.#{type}.new(nil, @#{type.downcase == "fixedopaque" ? "length" : "max_size"})\n\n"
+              out.puts "@opaque_spec XDR.#{xdr_module}.new(nil, @#{type.downcase == "opaque" ? "length" : "max_size"})\n\n"
 
               out.puts "@spec new(opaque :: binary()) :: t()\n"
               out.puts "def new(opaque), do: %__MODULE__{opaque: opaque}\n\n"
@@ -784,14 +784,14 @@ module Xdrgen
               out.puts "@impl true"
               out.puts "def encode_xdr(%__MODULE__{opaque: opaque}) do\n"
               out.indent do
-                out.puts "XDR.#{type}.encode_xdr(%XDR.#{type}{opaque: opaque, #{type.downcase == "fixedopaque" ? "length: @length" : "max_size: @max_size"}})\n"
+                out.puts "XDR.#{xdr_module}.encode_xdr(%XDR.#{xdr_module}{opaque: opaque, #{type.downcase == "opaque" ? "length: @length" : "max_size: @max_size"}})\n"
               end
               out.puts "end\n\n"
 
               out.puts "@impl true"
               out.puts "def encode_xdr!(%__MODULE__{opaque: opaque}) do\n"
               out.indent do
-                out.puts "XDR.#{type}.encode_xdr!(%XDR.#{type}{opaque: opaque, #{type.downcase == "fixedopaque" ? "length: @length" : "max_size: @max_size"}})\n"
+                out.puts "XDR.#{xdr_module}.encode_xdr!(%XDR.#{xdr_module}{opaque: opaque, #{type.downcase == "opaque" ? "length: @length" : "max_size: @max_size"}})\n"
               end
               out.puts "end\n\n"
 
@@ -800,9 +800,9 @@ module Xdrgen
 
               out.puts "def decode_xdr(bytes, spec) do\n"
               out.indent do
-                out.puts "case XDR.#{type}.decode_xdr(bytes, spec) do\n"
+                out.puts "case XDR.#{xdr_module}.decode_xdr(bytes, spec) do\n"
                 out.indent do
-                  out.puts "{:ok, {%XDR.#{type}{opaque: opaque}, rest}} -> {:ok, {new(opaque), rest}}\n"
+                  out.puts "{:ok, {%XDR.#{xdr_module}{opaque: opaque}, rest}} -> {:ok, {new(opaque), rest}}\n"
                   out.puts "error -> error\n"
                 end
                 out.puts "end\n"
@@ -814,7 +814,7 @@ module Xdrgen
 
               out.puts "def decode_xdr!(bytes, spec) do\n"
               out.indent do
-                out.puts "{%XDR.#{type}{opaque: opaque}, rest} = XDR.#{type}.decode_xdr!(bytes)\n"
+                out.puts "{%XDR.#{xdr_module}{opaque: opaque}, rest} = XDR.#{xdr_module}.decode_xdr!(bytes)\n"
                 out.puts "{new(opaque), rest}\n"
               end
               out.puts "end\n"
@@ -977,10 +977,10 @@ module Xdrgen
                 "Int"
               when AST::Typespecs::Opaque
                 if type.fixed?
-                  build_opaque_typedef(out, "FixedOpaque", type.size)
-                  "FixedOpaque"
+                  build_opaque_typedef(out, "Opaque", "FixedOpaque", type.size)
+                  "Opaque"
                 else
-                  type.size ? build_opaque_typedef(out, "VariableOpaque", type.size) : build_opaque_typedef(out, "VariableOpaque")
+                  type.size ? build_opaque_typedef(out, "VariableOpaque", "VariableOpaque", type.size) : build_opaque_typedef(out, "VariableOpaque", "VariableOpaque")
                   "VariableOpque"
                 end
               when AST::Typespecs::Quadruple
