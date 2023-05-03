@@ -78,10 +78,12 @@ module Xdrgen
       end
 
       def render_typedef(typedef)
-        file_name = "#{typedef.name.downcase}.ex"
+        type_name = typedef.declaration.type.sub_type == :var_array ? "#{typedef.name}list" : typedef.name
+
+        file_name = "#{type_name.underscore.downcase}.ex"
         out = @output.open(file_name)
 
-        render_define_block(out, typedef.name.downcase) do 
+        render_define_block(out, type_name.underscore.downcase) do 
           out.indent do
             build_typedef(out, typedef)
           end
@@ -631,32 +633,284 @@ module Xdrgen
         out.puts "end\n"
       end
 
+      def build_string_typedef(out, typedef, string_type, module_name)
+        out.puts "@type t :: %__MODULE__{value: #{string_type}()}\n\n"
+
+        out.puts "defstruct [:value]\n\n"
+
+        unless typedef.declaration.type.size.nil?
+          out.puts "@max_lenght #{typedef.declaration.type.size}\n\n"
+        end
+
+        out.puts "@spec new(value :: #{string_type}()) :: t()\n"
+        out.puts "def new(value), do: %__MODULE__{value: value}\n\n"
+
+        out.puts "@impl true"
+        out.puts "def encode_xdr(%__MODULE__{value: value}) do\n"
+        out.indent do
+          out.puts "value\n"
+          unless typedef.declaration.type.size.nil?
+            out.puts "|> XDR.#{module_name}.new(@max_length)\n"
+          else
+            out.puts "|> XDR.#{module_name}.new()\n"
+          end
+          out.puts "|> XDR.#{module_name}.encode_xdr()"
+        end
+        out.puts "end\n\n"
+
+        out.puts "@impl true"
+        out.puts "def encode_xdr!(%__MODULE__{value: value}) do\n"
+        out.indent do
+          out.puts "value\n"
+          unless typedef.declaration.type.size.nil?
+            out.puts "|> XDR.#{module_name}.new(@max_length)\n"
+          else
+            out.puts "|> XDR.#{module_name}.new()\n"
+          end
+          out.puts "|> XDR.#{module_name}.encode_xdr!()"
+        end
+        out.puts "end\n\n"
+
+        out.puts "@impl true"
+        out.puts "def decode_xdr(bytes, term \\\\ nil)\n\n"
+
+        out.puts "def decode_xdr(bytes, _term) do\n"
+        out.indent do
+          out.puts "case XDR.#{module_name}.decode_xdr(bytes) do\n"
+          out.indent do
+            out.puts "{:ok, {%XDR.#{module_name}{#{module_name.downcase}: value}, rest}} -> {:ok, {new(value), rest}}\n"
+            out.puts "error -> error\n"
+          end
+          out.puts "end\n"
+        end
+        out.puts "end\n\n"
+
+        out.puts "@impl true"
+        out.puts "def decode_xdr!(bytes, term \\\\ nil)\n\n"
+
+        out.puts "def decode_xdr!(bytes, _term) do\n"
+        out.indent do
+          out.puts "{%XDR.#{module_name}{#{module_name.downcase}: value}, rest} = XDR.#{module_name}.decode_xdr!(bytes)\n"
+          out.puts "{new(value), rest}\n"
+        end
+        out.puts "end\n"
+      end
+
+      def build_opaque_typedef(out_main, type, xdr_module, size = nil)
+        name = "#{type}#{size}"
+
+        unless size.nil?
+          file_name = "#{type.underscore.downcase}#{size}.ex"
+          out = @output.open(file_name)
+
+          render_define_block(out, name) do 
+            out.indent do
+              out.puts "@type t :: %__MODULE__{opaque: binary()}\n\n"
+
+              out.puts "defstruct [:opaque]\n\n"
+
+              out.puts "@#{type.downcase == "opaque" ? "length" : "max_size"} #{size}\n\n"
+
+              out.puts "@opaque_spec XDR.#{xdr_module}.new(nil, @#{type.downcase == "opaque" ? "length" : "max_size"})\n\n"
+
+              out.puts "@spec new(opaque :: binary()) :: t()\n"
+              out.puts "def new(opaque), do: %__MODULE__{opaque: opaque}\n\n"
+
+              out.puts "@impl true"
+              out.puts "def encode_xdr(%__MODULE__{opaque: opaque}) do\n"
+              out.indent do
+                out.puts "XDR.#{xdr_module}.encode_xdr(%XDR.#{xdr_module}{opaque: opaque, #{type.downcase == "opaque" ? "length: @length" : "max_size: @max_size"}})\n"
+              end
+              out.puts "end\n\n"
+
+              out.puts "@impl true"
+              out.puts "def encode_xdr!(%__MODULE__{opaque: opaque}) do\n"
+              out.indent do
+                out.puts "XDR.#{xdr_module}.encode_xdr!(%XDR.#{xdr_module}{opaque: opaque, #{type.downcase == "opaque" ? "length: @length" : "max_size: @max_size"}})\n"
+              end
+              out.puts "end\n\n"
+
+              out.puts "@impl true"
+              out.puts "def decode_xdr(bytes, spec \\\\ @opaque_spec)\n\n"
+
+              out.puts "def decode_xdr(bytes, spec) do\n"
+              out.indent do
+                out.puts "case XDR.#{xdr_module}.decode_xdr(bytes, spec) do\n"
+                out.indent do
+                  out.puts "{:ok, {%XDR.#{xdr_module}{opaque: opaque}, rest}} -> {:ok, {new(opaque), rest}}\n"
+                  out.puts "error -> error\n"
+                end
+                out.puts "end\n"
+              end
+              out.puts "end\n\n"
+
+              out.puts "@impl true"
+              out.puts "def decode_xdr!(bytes, spec \\\\ @opaque_spec)\n\n"
+
+              out.puts "def decode_xdr!(bytes, spec) do\n"
+              out.indent do
+                out.puts "{%XDR.#{xdr_module}{opaque: opaque}, rest} = XDR.#{xdr_module}.decode_xdr!(bytes)\n"
+                out.puts "{new(opaque), rest}\n"
+              end
+              out.puts "end\n"
+            end
+          end
+        end
+
+        out_main.puts "alias #{@namespace}.#{type}#{size}\n\n"
+
+        out_main.puts "@type t :: %__MODULE__{value: binary()}\n\n"
+
+        out_main.puts "defstruct [:value]\n\n"
+
+        out_main.puts "@spec new(value :: binary()) :: t()\n"
+        out_main.puts "def new(value), do: %__MODULE__{value: value}\n\n"
+
+        out_main.puts "@impl true"
+        out_main.puts "def encode_xdr(%__MODULE__{value: value}) do\n"
+        out_main.indent do
+          out_main.puts "value\n"
+          out_main.puts "|> #{type}#{size}.new()\n"
+          out_main.puts "|> #{type}#{size}.encode_xdr()\n"
+        end
+        out_main.puts "end\n\n"
+
+        out_main.puts "@impl true"
+        out_main.puts "def encode_xdr!(%__MODULE__{opaque: opaque}) do\n"
+        out_main.indent do
+          out_main.puts "value\n"
+          out_main.puts "|> #{type}#{size}.new()\n"
+          out_main.puts "|> #{type}#{size}.encode_xdr()\n"
+        end
+        out_main.puts "end\n\n"
+
+        out_main.puts "@impl true"
+        out_main.puts "def decode_xdr(bytes, term \\\\ nil)\n\n"
+
+        out_main.puts "def decode_xdr(bytes, _term) do\n"
+        out_main.indent do
+          out_main.puts "case XDR.#{type}#{size}.decode_xdr(bytes, term) do\n"
+          out_main.indent do
+            out_main.puts "{:ok, {%XDR.#{type}#{size}{opaque: value}, rest}} -> {:ok, {new(value), rest}}\n"
+            out_main.puts "error -> error\n"
+          end
+          out_main.puts "end\n"
+        end
+        out_main.puts "end\n\n"
+
+        out_main.puts "@impl true"
+        out_main.puts "def decode_xdr!(bytes, term \\\\ nil)\n\n"
+
+        out_main.puts "def decode_xdr!(bytes, _term) do\n"
+        out_main.indent do
+          out_main.puts "{%XDR.#{type}#{size}{opaque: value}, rest} = XDR.#{type}#{size}.decode_xdr!(bytes)\n"
+          out_main.puts "{new(value), rest}\n"
+        end
+        out_main.puts "end\n"
+      end
+
+      def build_list_typedef(out, base_type, size, list_type)
+        out.puts "alias #{@namespace}.#{base_type}\n\n"
+
+        out.puts "@#{list_type.downcase == "fixedarray" ? "length" : "max_length"} #{size.nil? ? "4_294_967_295" : size}\n\n"
+
+        out.puts "@array_type #{base_type}\n\n"
+
+        out.puts "@array_spec %{type: @array_type, #{list_type.downcase == "fixedarray" ? "length: @length" : "max_length: @max_length"}}\n\n"
+
+        out.puts "@type t :: %__MODULE__{items: list(#{base_type}.t())}\n\n"
+
+        out.puts "defstruct [:items]\n\n"
+
+        out.puts "@spec new(items :: list(#{base_type}.t())) :: t()\n"
+        out.puts "def new(items), do: %__MODULE__{items: items}\n\n"
+
+        out.puts "@impl true"
+        out.puts "def encode_xdr(%__MODULE__{items: items}) do\n"
+        out.indent do
+          out.puts "items\n"
+          out.puts "|> XDR.#{list_type}.new(@array_type, @#{list_type.downcase == "fixedarray" ? "length" : "max_length"})\n"
+          out.puts "|> XDR.#{list_type}.encode_xdr()\n"
+        end
+        out.puts "end\n\n"
+
+        out.puts "@impl true"
+        out.puts "def encode_xdr!(%__MODULE__{items: items}) do\n"
+        out.indent do
+          out.puts "items\n"
+          out.puts "|> XDR.#{list_type}.new(@array_type, @#{list_type.downcase == "fixedarray" ? "length" : "max_length"})\n"
+          out.puts "|> XDR.#{list_type}.encode_xdr!()\n"
+        end
+        out.puts "end\n\n"
+
+        out.puts "@impl true"
+        out.puts "def decode_xdr(bytes, spec \\\\ @array_spec)\n\n"
+
+        out.puts "def decode_xdr(bytes, spec) do\n"
+        out.indent do
+          out.puts "case XDR.#{list_type}.decode_xdr(bytes, spec) do\n"
+          out.indent do
+            out.puts "{:ok, {items, rest}} -> {:ok, {new(items), rest}}\n"
+            out.puts "error -> error\n"
+          end
+          out.puts "end\n"
+        end
+        out.puts "end\n\n"
+
+        out.puts "@impl true"
+        out.puts "def decode_xdr!(bytes, spec \\\\ @array_spec)\n\n"
+
+        out.puts "def decode_xdr!(bytes, spec) do\n"
+        out.indent do
+          out.puts "{items, rest} = XDR.{list_type}.decode_xdr!(bytes, spec)\n"
+          out.puts "{new(items), rest}\n"
+        end
+        out.puts "end\n"
+      end
+
       def build_typedef(out, typedef)
         type = typedef.declaration.type
         base_type = type_string(type)
 
-        case type
-          when AST::Typespecs::Bool
-            build_bool_typedef(out, "boolean", "Bool", "bool")
-            "Bool"
-          when AST::Typespecs::Double
-            build_number_typedef(out, "float_number", "DoubleFloat", "float")
-            "DoubleFloat"
-          when AST::Typespecs::Float
-            build_number_typedef(out, "float_number", "Float", "float")
-            "Float"
-          when AST::Typespecs::Hyper
-            build_number_typedef(out, "integer", "HyperInt", "datum")
-            "HyperInt"
-          when AST::Typespecs::Int
-            build_number_typedef(out, "integer", "Int", "datum")
-            "Int"
-          when AST::Typespecs::UnsignedHyper
-            build_number_typedef(out, "non_neg_integer", "HyperUInt", "datum")
-            "HyperUInt"
-          when AST::Typespecs::UnsignedInt
-            build_number_typedef(out, "non_neg_integer", "UInt", "datum")
-            "UInt"
+        case type.sub_type
+          when :optional
+            "Optional#{base_type}"
+            # build_optional_typedef()
+          when :array
+            is_named, size = type.array_size
+            size = is_named ? "\"#{size}\"" : size
+            build_list_typedef(out, base_type, size, "FixedArray")
+          when :var_array
+            is_named, size = type.array_size
+            size = is_named ? "\"#{size}\"" : (size || MAX_INT)
+            build_list_typedef(out, base_type, size, "VariableArray")
+          else
+          case type
+            when AST::Typespecs::Bool
+              build_bool_typedef(out, "boolean", "Bool", "bool")
+            when AST::Typespecs::Double
+              build_number_typedef(out, "float_number", "DoubleFloat", "float")
+            when AST::Typespecs::Float
+              build_number_typedef(out, "float_number", "Float", "float")
+            when AST::Typespecs::Hyper
+              build_number_typedef(out, "integer", "HyperInt", "datum")
+            when AST::Typespecs::Int
+              build_number_typedef(out, "integer", "Int", "datum")
+            when AST::Typespecs::Opaque
+              if type.fixed?
+                build_opaque_typedef(out, "Opaque", "FixedOpaque", type.size)
+              else
+                type.size ? build_opaque_typedef(out, "VariableOpaque", "VariableOpaque", type.size) : build_opaque_typedef(out, "VariableOpaque", "VariableOpaque")
+              end
+            when AST::Typespecs::Quadruple
+              raise "no quadruple support in elixir"
+            when AST::Typespecs::String
+              build_string_typedef(out, typedef, "String.t", "String")
+            when AST::Typespecs::UnsignedHyper
+              build_number_typedef(out, "non_neg_integer", "HyperUInt", "datum")
+            when AST::Typespecs::UnsignedInt
+              build_number_typedef(out, "non_neg_integer", "UInt", "datum")
+          end
         end
       end
     end
