@@ -85,7 +85,12 @@ module Xdrgen
         file_name = "#{const.name.underscore.downcase}.ex"
         out = @output.open(file_name)
 
-        out.puts "define_type(\"#{const_name const}\", Const, #{const.value});"
+        render_define_block(out, "Const#{const.name}") do
+          out.indent do
+            out.puts "@spec const :: integer()"
+            out.puts "def const, do: #{const.value}\n"
+          end
+        end
       end
 
       def render_other_type(type)
@@ -978,15 +983,26 @@ module Xdrgen
         end
       end
 
-      def build_list_typedef(typedef, base_type, size, list_type)
+      def build_list_typedef(typedef, base_type, list_type, type)
         file_name = "#{typedef.name.underscore.downcase}.ex"
         out = @output.open(file_name)
 
+        is_named, size = type.array_size
+        if type.sub_type == :var_array
+          size = is_named ? "\"#{size}\"" : (size || MAX_INT)
+        else
+          size = is_named ? "#{size}" : size
+        end
+
         render_define_block(out, typedef.name) do
           out.indent do
-            out.puts "alias #{@namespace}.#{base_type}\n\n"
-
-            out.puts "@#{list_type.downcase == "fixedarray" ? "length" : "max_length"} #{size.nil? ? "4_294_967_295" : size}\n\n"
+            if is_named
+              out.puts "alias #{@namespace}.{#{base_type}, Const#{size}}\n\n"
+              out.puts "@#{list_type.downcase == "fixedarray" ? "length" : "max_length"} Const#{size}.const\n\n" if is_named
+            else
+              out.puts "alias #{@namespace}.#{base_type}\n\n"
+              out.puts "@#{list_type.downcase == "fixedarray" ? "length" : "max_length"} #{size.nil? ? "4_294_967_295" : size}\n\n"
+            end
 
             out.puts "@array_type #{base_type}\n\n"
 
@@ -1054,13 +1070,9 @@ module Xdrgen
           when :optional
             build_optional_typedef(typedef, base_type.downcase, name)
           when :array
-            is_named, size = type.array_size
-            size = is_named ? "\"#{size}\"" : size
-            build_list_typedef(typedef, base_type, size, "FixedArray")
+            build_list_typedef(typedef, base_type, "FixedArray", type)
           when :var_array
-            is_named, size = type.array_size
-            size = is_named ? "\"#{size}\"" : (size || MAX_INT)
-            build_list_typedef(typedef, base_type, size, "VariableArray")
+            build_list_typedef(typedef, base_type, "VariableArray", type)
           else
           case type
             when AST::Typespecs::Bool

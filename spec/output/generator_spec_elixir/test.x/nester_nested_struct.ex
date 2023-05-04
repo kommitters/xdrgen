@@ -12,7 +12,7 @@ defmodule MyXDR.NesterNestedStruct do
 
   alias MyXDR.{
     Int
-  }
+  } 
 
   @struct_spec XDR.Struct.new(
     blah: Int

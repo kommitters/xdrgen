@@ -10,9 +10,9 @@ defmodule MyXDR.TestArray do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.Int
+  alias MyXDR.{Int, ConstFOO}
 
-  @length "FOO"
+  @length ConstFOO.const
 
   @array_type Int
 
