@@ -457,19 +457,6 @@ module Xdrgen
         out.close
       end
 
-      def name(named)
-        return nil unless named.respond_to?(:name)
-
-        parent = name named.parent_defn if named.is_a?(AST::Concerns::NestedDefinition)
-
-        # NOTE: classify will strip plurality, so we restore it if necessary
-        plural = named.name.underscore.downcase.pluralize == named.name.underscore.downcase
-        base   = named.name.underscore.classify
-        result = plural ? base.pluralize : base
-
-        "#{parent}#{result}"
-      end
-
       def const_name(named)
         named.name.underscore.upcase
       end
@@ -719,11 +706,7 @@ module Xdrgen
       end
 
       def build_string_typedef(typedef, is_struct)
-        name = if is_struct
-          type_string(typedef.declaration.type)
-        else
-          typedef.name
-        end
+        name = is_struct ? type_string(typedef.declaration.type) : typedef.name
 
         file_name = "#{name.downcase.underscore}.ex"
         out = @output.open(file_name)
