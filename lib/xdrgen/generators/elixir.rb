@@ -719,19 +719,10 @@ module Xdrgen
       end
 
       def build_string_typedef(typedef, is_struct)
-        if is_struct
-          base_type = type_string(typedef.declaration.type)
-          name = unless typedef.declaration.type.size.nil?
-            "#{base_type}"
-          else
-            base_type
-          end
+        name = if is_struct
+          type_string(typedef.declaration.type)
         else
-          name = unless typedef.declaration.type.size.nil?
-            "#{typedef.name}#{typedef.declaration.type.size}"
-          else
-            typedef.name
-          end
+          typedef.name
         end
 
         file_name = "#{name.downcase.underscore}.ex"
