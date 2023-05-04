@@ -10,7 +10,7 @@ defmodule MyXDR.Nester do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{ 
+  alias MyXDR.{
     NesterNestedEnum,
     NesterNestedStruct,
     NesterNestedUnion

@@ -10,7 +10,7 @@ defmodule MyXDR.MyStruct do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{ 
+  alias MyXDR.{
     Uint512,
     OptHash1,
     Int1,

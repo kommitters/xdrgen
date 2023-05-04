@@ -10,7 +10,7 @@ defmodule MyXDR.HasOptions do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{ 
+  alias MyXDR.{
     OptionalInt,
     OptionalArr
   } 

@@ -91,7 +91,16 @@ module Xdrgen
       def render_other_type(type)
         begin
           number = type_reference(type, type.name.camelize).scan(/\d+/).first
-          render_typedef(type, true) unless number.nil?
+          unless number.nil?
+            render_typedef(type, true)
+          else
+            if type.declaration.type.sub_type == :optional
+              variable = type.declaration.type
+              base_type = type_string(variable)
+              name = type_reference(type, type.name.camelize)
+              build_optional_typedef(type, base_type.downcase, name)
+            end
+          end
         rescue => exception
         end
       end
@@ -103,7 +112,7 @@ module Xdrgen
 
         render_define_block(out, struct_name) do
           out.indent do
-            out.puts "alias #{@namespace}.{ \n"
+            out.puts "alias #{@namespace}.{\n"
             out.indent do
               alias_list = ""
               struct.members.each_with_index do |m, i|
@@ -778,17 +787,17 @@ module Xdrgen
         out.close
       end
 
-      def build_optional_typedef(typedef, type, attribute)
-        file_name = "#{typedef.name.underscore.downcase}.ex"
+      def build_optional_typedef(typedef, attribute, name)
+        file_name = "#{name.underscore.downcase}.ex"
         out = @output.open(file_name)
 
-        render_define_block(out, "#{typedef.name.camelize}") do 
+        render_define_block(out, "#{name}") do 
           out.indent do
-            out.puts "alias #{@namespace}.#{type}\n\n"
+            out.puts "alias #{@namespace}.#{attribute.capitalize}\n\n"
 
-            out.puts "@optional_spec XDR.Optional.new(#{type})\n\n"
+            out.puts "@optional_spec XDR.Optional.new(#{attribute.capitalize})\n\n"
 
-            out.puts "@type #{attribute} :: #{type}.t() | nil\n\n"
+            out.puts "@type #{attribute} :: #{attribute.capitalize}.t() | nil\n\n"
 
             out.puts "@type t :: %__MODULE__{#{attribute}: #{attribute}()}\n\n"
 
@@ -1043,7 +1052,7 @@ module Xdrgen
 
         case type.sub_type
           when :optional
-            build_optional_typedef(typedef, base_type, name.underscore)
+            build_optional_typedef(typedef, base_type.downcase, name)
           when :array
             is_named, size = type.array_size
             size = is_named ? "\"#{size}\"" : size
@@ -1079,7 +1088,7 @@ module Xdrgen
             when AST::Typespecs::UnsignedInt
               build_number_typedef(typedef, "non_neg_integer", "UInt", "datum")
             else
-              build_simple_typedef(typedef, base_type, name, is_struct)
+              build_simple_typedef(typedef, base_type, typedef.name, is_struct)
           end
         end
       end

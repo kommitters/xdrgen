@@ -10,7 +10,7 @@ defmodule MyXDR.HasStuff do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{ 
+  alias MyXDR.{
     LotsOfMyStructs
   } 
 

@@ -10,7 +10,7 @@ defmodule MyXDR.MyUnionTwo do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{ 
+  alias MyXDR.{
     Int,
     Foo
   } 

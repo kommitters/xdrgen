@@ -14,25 +14,25 @@ defmodule MyXDR.OptHash2 do
 
   @optional_spec XDR.Optional.new(Hash)
 
-  @type opt_hash2 :: Hash.t() | nil
+  @type hash :: Hash.t() | nil
 
-  @type t :: %__MODULE__{opt_hash2: opt_hash2()}
+  @type t :: %__MODULE__{hash: hash()}
 
-  defstruct [:opt_hash2]
+  defstruct [:hash]
 
-  @spec new(opt_hash2 :: opt_hash2()) :: t()
-  def new(opt_hash2 \\ nil), do: %__MODULE__{opt_hash2: opt_hash2}
+  @spec new(hash :: hash()) :: t()
+  def new(hash \\ nil), do: %__MODULE__{hash: hash}
 
   @impl true
-  def encode_xdr(%__MODULE__{opt_hash2: opt_hash2}) do
-    opt_hash2
+  def encode_xdr(%__MODULE__{hash: hash}) do
+    hash
     |> XDR.Optional.new()
     |> XDR.Optional.encode_xdr()
   end
 
   @impl true
-  def encode_xdr!(%__MODULE__{opt_hash2: opt_hash2}) do
-    opt_hash2
+  def encode_xdr!(%__MODULE__{hash: hash}) do
+    hash
     |> XDR.Optional.new()
     |> XDR.Optional.encode_xdr!()
   end
@@ -42,7 +42,7 @@ defmodule MyXDR.OptHash2 do
 
   def decode_xdr(bytes, optional_spec) do
     case XDR.Optional.decode_xdr(bytes, optional_spec) do
-      {:ok, {%XDR.Optional{type: opt_hash2}, rest}} -> {:ok, {new(opt_hash2), rest}}
+      {:ok, {%XDR.Optional{type: hash}, rest}} -> {:ok, {new(hash), rest}}
       {:ok, {nil, rest}} -> {:ok, {new(), rest}}
       error -> error
     end
@@ -52,8 +52,8 @@ defmodule MyXDR.OptHash2 do
   def decode_xdr!(bytes, optional_spec \\ @optional_spec)
 
   def decode_xdr!(bytes, optional_spec) do
-    {%XDR.Optional{identifier: opt_hash2}, rest} = XDR.Optional.decode_xdr!(bytes)
-    {new(opt_hash2), rest}
+    {%XDR.Optional{identifier: hash}, rest} = XDR.Optional.decode_xdr!(bytes)
+    {new(hash), rest}
     {nil, rest} -> {new(), rest}
   end
 end

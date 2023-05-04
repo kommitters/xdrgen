@@ -10,9 +10,9 @@ defmodule MyXDR.NesterNestedStruct do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{ 
+  alias MyXDR.{
     Int
-  } 
+  }
 
   @struct_spec XDR.Struct.new(
     blah: Int
