@@ -13,7 +13,7 @@ defmodule MyXDR.IntUnion do
   alias MyXDR.{
     Int,
     Error,
-    Things
+    MultiList
   }
 
   @arms [
