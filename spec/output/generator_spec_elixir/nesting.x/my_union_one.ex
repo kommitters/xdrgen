@@ -10,7 +10,9 @@ defmodule MyXDR.MyUnionOne do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.{Int} 
+  alias MyXDR.{ 
+    Int
+  } 
 
   @struct_spec XDR.Struct.new(
     some_int: Int

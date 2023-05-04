@@ -548,11 +548,71 @@ module Xdrgen
         end
       end
 
+      def build_simple_typedef(typedef, type, module_name, is_struct)
+        unless is_struct
+          attribute = module_name.underscore.downcase
+          file_name = "#{attribute}.ex"
+          out = @output.open(file_name)
+
+          render_define_block(out, module_name) do 
+            out.indent do
+              out.puts "alias #{@namespace}.#{type}\n\n"
+
+              out.puts "@type t :: %__MODULE__{#{attribute}: #{type}.t()}\n\n"
+
+              out.puts "defstruct [:#{attribute}]\n\n"
+
+              out.puts "@spec new(#{attribute} :: #{type}.t()) :: t()\n"
+              out.puts "def new(%#{type}{} = #{attribute}), do: %__MODULE__{#{attribute}: #{attribute}}\n\n"
+
+              out.puts "@impl true"
+              out.puts "def encode_xdr(%__MODULE__{#{attribute}: #{attribute}}) do\n"
+              out.indent do
+                out.puts "#{type}.encode_xdr(#{attribute})\n"
+              end
+              out.puts "end\n\n"
+
+              out.puts "@impl true"
+              out.puts "def encode_xdr!(%__MODULE__{#{attribute}: #{attribute}}) do\n"
+              out.indent do
+                out.puts "#{type}.encode_xdr!(#{attribute})\n"
+              end
+              out.puts "end\n\n"
+
+              out.puts "@impl true"
+              out.puts "def decode_xdr(bytes, term \\\\ nil)\n\n"
+
+              out.puts "def decode_xdr(bytes, _term) do\n"
+              out.indent do
+                out.puts "case #{type}.decode_xdr(bytes) do\n"
+                out.indent do
+                  out.puts "{:ok, {%#{type}{} = #{attribute}, rest}} -> {:ok, {new(#{attribute}), rest}}\n"
+                  out.puts "error -> error\n"
+                end
+                out.puts "end\n"
+              end
+              out.puts "end\n\n"
+
+              out.puts "@impl true"
+              out.puts "def decode_xdr!(bytes, term \\\\ nil)\n\n"
+
+              out.puts "def decode_xdr!(bytes, _term) do\n"
+              out.indent do
+                out.puts "{%#{type}{} = #{attribute}, rest} = #{type}.decode_xdr!(bytes)\n"
+                out.puts "{new(#{attribute}), rest}\n"
+              end
+              out.puts "end\n"
+            end
+          end
+          out.close
+        end
+      end
+
       def build_number_typedef(typedef, number_type, type, attribute)
-        file_name = "#{typedef.name.downcase.underscore}.ex"
+        file_name = "#{typedef.name.underscore.downcase}.ex"
         out = @output.open(file_name)
 
-        render_define_block(out, typedef.name.downcase) do 
+        render_define_block(out, typedef.name) do 
           out.indent do
             out.puts "@type t :: %__MODULE__{#{attribute}: #{number_type}()}\n\n"
 
@@ -1044,6 +1104,8 @@ module Xdrgen
               build_number_typedef(typedef, "non_neg_integer", "HyperUInt", "datum")
             when AST::Typespecs::UnsignedInt
               build_number_typedef(typedef, "non_neg_integer", "UInt", "datum")
+            else
+              build_simple_typedef(typedef, base_type, name, is_struct)
           end
         end
       end
