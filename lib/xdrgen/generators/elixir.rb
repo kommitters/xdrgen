@@ -30,7 +30,7 @@ module Xdrgen
         when AST::Definitions::Union ;
           render_union defn
         when AST::Definitions::Typedef ;
-          render_typedef defn
+          render_typedef(defn, false)
         when AST::Definitions::Const ;
           render_const defn
         end
@@ -77,8 +77,8 @@ module Xdrgen
         out.break
       end
 
-      def render_typedef(typedef)
-        build_typedef(typedef)
+      def render_typedef(typedef, is_struct)
+        build_typedef(typedef, is_struct)
       end
 
       def render_const(const)
@@ -88,6 +88,14 @@ module Xdrgen
         out.puts "define_type(\"#{const_name const}\", Const, #{const.value});"
       end
 
+      def render_other_type(type)
+        begin
+          number = type_reference(type, type.name.camelize).scan(/\d+/).first
+          render_typedef(type, true) unless number.nil?
+        rescue => exception
+        end
+      end
+
       def render_struct(struct)
         struct_name = name struct
         file_name = "#{struct_name.underscore}.ex"
@@ -95,12 +103,19 @@ module Xdrgen
 
         render_define_block(out, struct_name) do
           out.indent do
-            alias_namespace = "alias #{@namespace}.{"
+            out.puts "alias #{@namespace}.{ \n"
+            out.indent do
+              alias_list = ""
               struct.members.each_with_index do |m, i|
-              alias_namespace += "#{type_reference m, m.name.camelize}#{comma_and_space_unless_last(i, struct.members)}"
+                name = type_reference m, m.name.camelize
+                unless alias_list.include?(name)
+                  alias_list += "#{name}#{comma_unless_last(i, struct.members)}\n"
+                  render_other_type(m)
+                end
               end
-            alias_namespace += "} \n\n"
-            out.puts alias_namespace
+              out.puts alias_list
+            end
+            out.puts "} \n\n"
 
             out.puts "@struct_spec XDR.Struct.new("
             out.indent do
@@ -498,6 +513,12 @@ module Xdrgen
 
       def type_string(type)
         case type
+          when AST::Typespecs::Simple
+            "#{name type}"
+          when AST::Definitions::Base
+            "#{name type}"
+          when AST::Concerns::NestedDefinition
+            "#{name type}"
           when AST::Typespecs::Bool
             "Bool"
           when AST::Typespecs::Double
@@ -510,7 +531,7 @@ module Xdrgen
             "Int"
           when AST::Typespecs::Opaque
             if type.fixed?
-              "FixedOpaque#{type.size}"
+              "Opaque#{type.size}"
             else
               type.size ? "VariableOpaque#{type.size}" : "VariableOpaque"
             end
@@ -522,12 +543,6 @@ module Xdrgen
             "HyperUInt"
           when AST::Typespecs::UnsignedInt
             "UInt"
-          when AST::Typespecs::Simple
-            "#{name type}"
-          when AST::Definitions::Base
-            "#{name type}"
-          when AST::Concerns::NestedDefinition
-            "#{name type}"
           else
             raise "Unknown reference type: #{type.class.name}, #{type.class.ancestors}"
         end
@@ -643,11 +658,20 @@ module Xdrgen
         out.close
       end
 
-      def build_string_typedef(typedef)
-        name = unless typedef.declaration.type.size.nil?
-          "#{typedef.name}#{typedef.declaration.type.size}"
+      def build_string_typedef(typedef, is_struct)
+        if is_struct
+          base_type = type_string(typedef.declaration.type)
+          name = unless typedef.declaration.type.size.nil?
+            "#{base_type}"
+          else
+            base_type
+          end
         else
-          typedef.name
+          name = unless typedef.declaration.type.size.nil?
+            "#{typedef.name}#{typedef.declaration.type.size}"
+          else
+            typedef.name
+          end
         end
 
         file_name = "#{name.downcase.underscore}.ex"
@@ -721,7 +745,7 @@ module Xdrgen
       end
 
       def build_optional_typedef(typedef, type, attribute)
-        file_name = "#{typedef.name.downcase.underscore}.ex"
+        file_name = "#{typedef.name.underscore.downcase}.ex"
         out = @output.open(file_name)
 
         render_define_block(out, "#{typedef.name.camelize}") do 
@@ -788,7 +812,7 @@ module Xdrgen
         out.close
       end
 
-      def build_opaque_typedef(typedef, type, xdr_module, size = nil)
+      def build_opaque_typedef(typedef, type, xdr_module, size = nil, is_struct)
         name = "#{type}#{size}"
 
         unless size.nil?
@@ -850,64 +874,65 @@ module Xdrgen
           out.close
         end
 
-        file_name_main = "#{typedef.name.downcase.underscore}.ex"
-        out_main = @output.open(file_name_main)
-
-        render_define_block(out_main, typedef.name.downcase) do
-          out_main.indent do
-            out_main.puts "alias #{@namespace}.#{type}#{size}\n\n"
-
-            out_main.puts "@type t :: %__MODULE__{value: binary()}\n\n"
-
-            out_main.puts "defstruct [:value]\n\n"
-
-            out_main.puts "@spec new(value :: binary()) :: t()\n"
-            out_main.puts "def new(value), do: %__MODULE__{value: value}\n\n"
-
-            out_main.puts "@impl true"
-            out_main.puts "def encode_xdr(%__MODULE__{value: value}) do\n"
+        unless is_struct
+          file_name_main = "#{typedef.name.downcase.underscore}.ex"
+          out_main = @output.open(file_name_main)
+          render_define_block(out_main, typedef.name.downcase) do
             out_main.indent do
-              out_main.puts "value\n"
-              out_main.puts "|> #{type}#{size}.new()\n"
-              out_main.puts "|> #{type}#{size}.encode_xdr()\n"
-            end
-            out_main.puts "end\n\n"
-
-            out_main.puts "@impl true"
-            out_main.puts "def encode_xdr!(%__MODULE__{opaque: opaque}) do\n"
-            out_main.indent do
-              out_main.puts "value\n"
-              out_main.puts "|> #{type}#{size}.new()\n"
-              out_main.puts "|> #{type}#{size}.encode_xdr()\n"
-            end
-            out_main.puts "end\n\n"
-
-            out_main.puts "@impl true"
-            out_main.puts "def decode_xdr(bytes, term \\\\ nil)\n\n"
-
-            out_main.puts "def decode_xdr(bytes, _term) do\n"
-            out_main.indent do
-              out_main.puts "case XDR.#{type}#{size}.decode_xdr(bytes, term) do\n"
+              out_main.puts "alias #{@namespace}.#{type}#{size}\n\n"
+  
+              out_main.puts "@type t :: %__MODULE__{value: binary()}\n\n"
+  
+              out_main.puts "defstruct [:value]\n\n"
+  
+              out_main.puts "@spec new(value :: binary()) :: t()\n"
+              out_main.puts "def new(value), do: %__MODULE__{value: value}\n\n"
+  
+              out_main.puts "@impl true"
+              out_main.puts "def encode_xdr(%__MODULE__{value: value}) do\n"
               out_main.indent do
-                out_main.puts "{:ok, {%XDR.#{type}#{size}{opaque: value}, rest}} -> {:ok, {new(value), rest}}\n"
-                out_main.puts "error -> error\n"
+                out_main.puts "value\n"
+                out_main.puts "|> #{type}#{size}.new()\n"
+                out_main.puts "|> #{type}#{size}.encode_xdr()\n"
+              end
+              out_main.puts "end\n\n"
+  
+              out_main.puts "@impl true"
+              out_main.puts "def encode_xdr!(%__MODULE__{opaque: opaque}) do\n"
+              out_main.indent do
+                out_main.puts "value\n"
+                out_main.puts "|> #{type}#{size}.new()\n"
+                out_main.puts "|> #{type}#{size}.encode_xdr()\n"
+              end
+              out_main.puts "end\n\n"
+  
+              out_main.puts "@impl true"
+              out_main.puts "def decode_xdr(bytes, term \\\\ nil)\n\n"
+  
+              out_main.puts "def decode_xdr(bytes, _term) do\n"
+              out_main.indent do
+                out_main.puts "case XDR.#{type}#{size}.decode_xdr(bytes, term) do\n"
+                out_main.indent do
+                  out_main.puts "{:ok, {%XDR.#{type}#{size}{opaque: value}, rest}} -> {:ok, {new(value), rest}}\n"
+                  out_main.puts "error -> error\n"
+                end
+                out_main.puts "end\n"
+              end
+              out_main.puts "end\n\n"
+  
+              out_main.puts "@impl true"
+              out_main.puts "def decode_xdr!(bytes, term \\\\ nil)\n\n"
+  
+              out_main.puts "def decode_xdr!(bytes, _term) do\n"
+              out_main.indent do
+                out_main.puts "{%XDR.#{type}#{size}{opaque: value}, rest} = XDR.#{type}#{size}.decode_xdr!(bytes)\n"
+                out_main.puts "{new(value), rest}\n"
               end
               out_main.puts "end\n"
             end
-            out_main.puts "end\n\n"
-
-            out_main.puts "@impl true"
-            out_main.puts "def decode_xdr!(bytes, term \\\\ nil)\n\n"
-
-            out_main.puts "def decode_xdr!(bytes, _term) do\n"
-            out_main.indent do
-              out_main.puts "{%XDR.#{type}#{size}{opaque: value}, rest} = XDR.#{type}#{size}.decode_xdr!(bytes)\n"
-              out_main.puts "{new(value), rest}\n"
-            end
-            out_main.puts "end\n"
           end
+          out_main.close
         end
-        out_main.close
       end
 
       def build_list_typedef(typedef, base_type, size, list_type)
@@ -977,14 +1002,14 @@ module Xdrgen
         out.close
       end
 
-      def build_typedef(typedef)
+      def build_typedef(typedef, is_struct)
         type = typedef.declaration.type
         base_type = type_string(type)
         name = typedef.name
 
         case type.sub_type
           when :optional
-            build_optional_typedef(typedef, name.camelize, name.underscore)
+            build_optional_typedef(typedef, base_type, name.underscore)
           when :array
             is_named, size = type.array_size
             size = is_named ? "\"#{size}\"" : size
@@ -1007,14 +1032,14 @@ module Xdrgen
               build_number_typedef(typedef, "integer", "Int", "datum")
             when AST::Typespecs::Opaque
               if type.fixed?
-                build_opaque_typedef(typedef, "Opaque", "FixedOpaque", type.size)
+                build_opaque_typedef(typedef, "Opaque", "FixedOpaque", type.size, is_struct)
               else
-                type.size ? build_opaque_typedef(typedef, "VariableOpaque", "VariableOpaque", type.size) : build_opaque_typedef(typedef, "VariableOpaque", "VariableOpaque")
+                type.size ? build_opaque_typedef(typedef, "VariableOpaque", "VariableOpaque", type.size, is_struct) : build_opaque_typedef(typedef, "VariableOpaque", "VariableOpaque", is_struct)
               end
             when AST::Typespecs::Quadruple
               raise "no quadruple support in elixir"
             when AST::Typespecs::String
-              build_string_typedef(typedef)
+              build_string_typedef(typedef, is_struct)
             when AST::Typespecs::UnsignedHyper
               build_number_typedef(typedef, "non_neg_integer", "HyperUInt", "datum")
             when AST::Typespecs::UnsignedInt
