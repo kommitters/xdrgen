@@ -988,10 +988,10 @@ module Xdrgen
         out = @output.open(file_name)
 
         is_named, size = type.array_size
-        if type.sub_type == :var_array
-          size = is_named ? "\"#{size}\"" : (size || MAX_INT)
+        size =  if type.sub_type == :var_array
+          is_named ? size : (size || MAX_INT)
         else
-          size = is_named ? "#{size}" : size
+          size
         end
 
         render_define_block(out, typedef.name) do
