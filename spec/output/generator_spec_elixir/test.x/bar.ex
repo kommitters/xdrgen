@@ -10,6 +10,8 @@ defmodule MyXDR.ConstBAR do
 
   @behaviour XDR.Declaration
 
+  alias MyXDR.ConstFOO
+
   @spec const :: integer()
-  def const, do: FOO
+  def const, do: ConstFOO.const
 end

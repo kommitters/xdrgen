@@ -84,11 +84,17 @@ module Xdrgen
       def render_const(const)
         file_name = "#{const.name.underscore.downcase}.ex"
         out = @output.open(file_name)
+        only_numbers = const.value.scan(/\D/).empty?
 
         render_define_block(out, "Const#{const.name}") do
           out.indent do
+            out.puts "alias #{@namespace}.Const#{const.value}\n\n" unless only_numbers
             out.puts "@spec const :: integer()"
-            out.puts "def const, do: #{const.value}\n"
+            unless only_numbers
+              out.puts "def const, do: Const#{const.value}.const\n"
+            else
+              out.puts "def const, do: #{const.value}\n"
+            end
           end
         end
       end
