@@ -4,6 +4,7 @@ module Xdrgen
       MAX_INT = (2**31) - 1
 
       def generate
+        @constants = Hash.new
         render_definitions(@top)
         render_base_classes
       end
@@ -82,21 +83,7 @@ module Xdrgen
       end
 
       def render_const(const)
-        file_name = "#{const.name.underscore.downcase}.ex"
-        out = @output.open(file_name)
-        only_numbers = const.value.scan(/\D/).empty?
-
-        render_define_block(out, "Const#{const.name}") do
-          out.indent do
-            out.puts "alias #{@namespace}.Const#{const.value}\n\n" unless only_numbers
-            out.puts "@spec const :: integer()"
-            unless only_numbers
-              out.puts "def const, do: Const#{const.value}.const\n"
-            else
-              out.puts "def const, do: #{const.value}\n"
-            end
-          end
-        end
+        @constants["#{const.name.underscore.downcase}"] = const.value
       end
 
       def render_other_type(type)
@@ -995,20 +982,16 @@ module Xdrgen
 
         is_named, size = type.array_size
         size =  if type.sub_type == :var_array
-          is_named ? size : (size || MAX_INT)
+          is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
         else
-          size
+          is_named ? @constants["#{size.underscore.downcase}"] : size
         end
 
         render_define_block(out, typedef.name) do
           out.indent do
-            if is_named
-              out.puts "alias #{@namespace}.{#{base_type}, Const#{size}}\n\n"
-              out.puts "@#{list_type.downcase == "fixedarray" ? "length" : "max_length"} Const#{size}.const\n\n" if is_named
-            else
-              out.puts "alias #{@namespace}.#{base_type}\n\n"
-              out.puts "@#{list_type.downcase == "fixedarray" ? "length" : "max_length"} #{size.nil? ? "4_294_967_295" : size}\n\n"
-            end
+            out.puts "alias #{@namespace}.#{base_type}\n\n"
+
+            out.puts "@#{list_type.downcase == "fixedarray" ? "length" : "max_length"} #{size.nil? ? "4_294_967_295" : size}\n\n"
 
             out.puts "@array_type #{base_type}\n\n"
 
