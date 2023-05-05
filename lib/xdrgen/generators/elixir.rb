@@ -396,7 +396,7 @@ module Xdrgen
               union.arms.each_with_index do |m, i|
                 name = m.void? ? "Void" : "#{type_reference m, m.name.camelize}"
                 if i == 0
-                  out.puts "#{name}.t()"
+                  type_list += "#{name}.t()\n"
                 else
                   unless type_list.include?(name)
                     type_list += "| #{name}.t()\n"
