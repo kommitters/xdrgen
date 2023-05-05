@@ -97,7 +97,7 @@ module Xdrgen
               variable = type.declaration.type
               base_type = type_string(variable)
               name = type_reference(type, type.name.camelize)
-              build_optional_typedef(type, base_type.downcase, name)
+              build_optional_typedef(type, base_type, name)
             when :var_array, :array
               variable = type.declaration.type
               base_type = type_string(variable)
@@ -802,33 +802,33 @@ module Xdrgen
 
         render_define_block(out, "#{name}") do 
           out.indent do
-            out.puts "alias #{@namespace}.#{attribute.capitalize}\n\n"
+            out.puts "alias #{@namespace}.#{attribute}\n\n"
 
-            out.puts "@optional_spec XDR.Optional.new(#{attribute.capitalize})\n\n"
+            out.puts "@optional_spec XDR.Optional.new(#{attribute})\n\n"
 
-            out.puts "@type #{attribute} :: #{attribute.capitalize}.t() | nil\n\n"
+            out.puts "@type #{attribute.underscore.downcase} :: #{attribute}.t() | nil\n\n"
 
-            out.puts "@type t :: %__MODULE__{#{attribute}: #{attribute}()}\n\n"
+            out.puts "@type t :: %__MODULE__{#{attribute.underscore.downcase}: #{attribute.underscore.downcase}()}\n\n"
 
-            out.puts "defstruct [:#{attribute}]\n\n"
+            out.puts "defstruct [:#{attribute.underscore.downcase}]\n\n"
 
 
-            out.puts "@spec new(#{attribute} :: #{attribute}()) :: t()\n"
-            out.puts "def new(#{attribute} \\\\ nil), do: %__MODULE__{#{attribute}: #{attribute}}\n\n"
+            out.puts "@spec new(#{attribute.underscore.downcase} :: #{attribute.underscore.downcase}()) :: t()\n"
+            out.puts "def new(#{attribute.underscore.downcase} \\\\ nil), do: %__MODULE__{#{attribute.underscore.downcase}: #{attribute.underscore.downcase}}\n\n"
 
             out.puts "@impl true"
-            out.puts "def encode_xdr(%__MODULE__{#{attribute}: #{attribute}}) do\n"
+            out.puts "def encode_xdr(%__MODULE__{#{attribute.underscore.downcase}: #{attribute.underscore.downcase}}) do\n"
             out.indent do
-              out.puts "#{attribute}"
+              out.puts "#{attribute.underscore.downcase}"
               out.puts "|> XDR.Optional.new()"
               out.puts "|> XDR.Optional.encode_xdr()"
             end
             out.puts "end\n\n"
 
             out.puts "@impl true"
-            out.puts "def encode_xdr!(%__MODULE__{#{attribute}: #{attribute}}) do\n"
+            out.puts "def encode_xdr!(%__MODULE__{#{attribute.underscore.downcase}: #{attribute.underscore.downcase}}) do\n"
             out.indent do
-              out.puts "#{attribute}"
+              out.puts "#{attribute.underscore.downcase}"
               out.puts "|> XDR.Optional.new()"
               out.puts "|> XDR.Optional.encode_xdr!()"
             end
@@ -841,7 +841,7 @@ module Xdrgen
             out.indent do
               out.puts "case XDR.Optional.decode_xdr(bytes, optional_spec) do\n"
               out.indent do
-                out.puts "{:ok, {%XDR.Optional{type: #{attribute}}, rest}} -> {:ok, {new(#{attribute}), rest}}\n"
+                out.puts "{:ok, {%XDR.Optional{type: #{attribute.underscore.downcase}}, rest}} -> {:ok, {new(#{attribute.underscore.downcase}), rest}}\n"
                 out.puts "{:ok, {nil, rest}} -> {:ok, {new(), rest}}"
                 out.puts "error -> error\n"
               end
@@ -854,8 +854,8 @@ module Xdrgen
 
             out.puts "def decode_xdr!(bytes, optional_spec) do\n"
             out.indent do
-              out.puts "{%XDR.Optional{identifier: #{attribute}}, rest} = XDR.Optional.decode_xdr!(bytes)\n"
-              out.puts "{new(#{attribute}), rest}\n"
+              out.puts "{%XDR.Optional{identifier: #{attribute.underscore.downcase}}, rest} = XDR.Optional.decode_xdr!(bytes)\n"
+              out.puts "{new(#{attribute.underscore.downcase}), rest}\n"
               out.puts "{nil, rest} -> {new(), rest}"
             end
             out.puts "end\n"
