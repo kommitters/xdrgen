@@ -103,9 +103,9 @@ module Xdrgen
               base_type = type_string(variable)
               name = type_reference(type, type.name.camelize)
               if type.declaration.type.sub_type == :var_array
-                build_list_typedef(name, base_type, "VariableList", variable)
+                build_list_typedef(name, base_type, "VariableArray", variable)
               else
-                build_list_typedef(name, base_type, "FixedList", variable)
+                build_list_typedef(name, base_type, "FixedArray", variable)
               end
             end
           end

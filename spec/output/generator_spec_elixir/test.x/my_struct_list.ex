@@ -26,22 +26,22 @@ defmodule MyXDR.MyStructList do
   @impl true
   def encode_xdr(%__MODULE__{items: items}) do
     items
-    |> XDR.VariableList.new(@array_type)
-    |> XDR.VariableList.encode_xdr()
+    |> XDR.VariableArray.new(@array_type)
+    |> XDR.VariableArray.encode_xdr()
   end
 
   @impl true
   def encode_xdr!(%__MODULE__{items: items}) do
     items
-    |> XDR.VariableList.new(@array_type)
-    |> XDR.VariableList.encode_xdr!()
+    |> XDR.VariableArray.new(@array_type)
+    |> XDR.VariableArray.encode_xdr!()
   end
 
   @impl true
   def decode_xdr(bytes, spec \\ @array_spec)
 
   def decode_xdr(bytes, spec) do
-    case XDR.VariableList.decode_xdr(bytes, spec) do
+    case XDR.VariableArray.decode_xdr(bytes, spec) do
       {:ok, {items, rest}} -> {:ok, {new(items), rest}}
       error -> error
     end
