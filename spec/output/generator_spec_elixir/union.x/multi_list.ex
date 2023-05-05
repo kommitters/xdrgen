@@ -12,11 +12,9 @@ defmodule MyXDR.MultiList do
 
   alias MyXDR.Multi
 
-  @max_length 2147483647
-
   @array_type Multi
 
-  @array_spec %{type: @array_type, max_length: @max_length}
+  @array_spec %{type: @array_type}
 
   @type t :: %__MODULE__{items: list(Multi.t())}
 
@@ -28,14 +26,14 @@ defmodule MyXDR.MultiList do
   @impl true
   def encode_xdr(%__MODULE__{items: items}) do
     items
-    |> XDR.VariableList.new(@array_type, @max_length)
+    |> XDR.VariableList.new(@array_type)
     |> XDR.VariableList.encode_xdr()
   end
 
   @impl true
   def encode_xdr!(%__MODULE__{items: items}) do
     items
-    |> XDR.VariableList.new(@array_type, @max_length)
+    |> XDR.VariableList.new(@array_type)
     |> XDR.VariableList.encode_xdr!()
   end
 

@@ -132,7 +132,7 @@ module Xdrgen
               end
               out.puts alias_list
             end
-            out.puts "} \n\n"
+            out.puts "}\n\n"
 
             out.puts "@struct_spec XDR.Struct.new("
             out.indent do
@@ -992,21 +992,27 @@ module Xdrgen
         out = @output.open(file_name)
 
         is_named, size = type.array_size
-        size =  if type.sub_type == :var_array
-          is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+        if type.sub_type == :var_array
+          size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+          length_nil = type.decl.resolved_size.nil?
         else
-          is_named ? @constants["#{size.underscore.downcase}"] : size
+          size = is_named ? @constants["#{size.underscore.downcase}"] : size
+          length_nil = false
         end
+
+        
 
         render_define_block(out, module_name) do
           out.indent do
             out.puts "alias #{@namespace}.#{base_type}\n\n"
 
-            out.puts "@#{list_type.downcase == "fixedarray" ? "length" : "max_length"} #{size.nil? ? "4_294_967_295" : size}\n\n"
+            unless length_nil
+              out.puts "@#{list_type.downcase == "fixedarray" ? "length" : "max_length"} #{size}\n\n"
+            end
 
             out.puts "@array_type #{base_type}\n\n"
 
-            out.puts "@array_spec %{type: @array_type, #{list_type.downcase == "fixedarray" ? "length: @length" : "max_length: @max_length"}}\n\n"
+            out.puts "@array_spec %{type: @array_type#{length_nil ? "" : ", #{list_type.downcase == "fixedarray"? "length: @length" : "max_length: @max_length"}"}}\n\n"
 
             out.puts "@type t :: %__MODULE__{items: list(#{base_type}.t())}\n\n"
 
@@ -1019,7 +1025,7 @@ module Xdrgen
             out.puts "def encode_xdr(%__MODULE__{items: items}) do\n"
             out.indent do
               out.puts "items\n"
-              out.puts "|> XDR.#{list_type}.new(@array_type, @#{list_type.downcase == "fixedarray" ? "length" : "max_length"})\n"
+              out.puts "|> XDR.#{list_type}.new(@array_type#{length_nil ? "" : ", @#{list_type.downcase == "fixedarray" ? "length" : "max_length"}"})\n"
               out.puts "|> XDR.#{list_type}.encode_xdr()\n"
             end
             out.puts "end\n\n"
@@ -1028,7 +1034,7 @@ module Xdrgen
             out.puts "def encode_xdr!(%__MODULE__{items: items}) do\n"
             out.indent do
               out.puts "items\n"
-              out.puts "|> XDR.#{list_type}.new(@array_type, @#{list_type.downcase == "fixedarray" ? "length" : "max_length"})\n"
+              out.puts "|> XDR.#{list_type}.new(@array_type#{length_nil ? "" : ", @#{list_type.downcase == "fixedarray" ? "length" : "max_length"}"})\n"
               out.puts "|> XDR.#{list_type}.encode_xdr!()\n"
             end
             out.puts "end\n\n"
