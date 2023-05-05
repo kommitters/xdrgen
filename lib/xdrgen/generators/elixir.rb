@@ -1068,7 +1068,7 @@ module Xdrgen
 
         case type.sub_type
           when :optional
-            build_optional_typedef(typedef, base_type.downcase, name)
+            build_optional_typedef(typedef, base_type, name)
           when :array
             build_list_typedef(name, base_type, "FixedArray", type)
           when :var_array
