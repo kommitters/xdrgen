@@ -356,11 +356,15 @@ module Xdrgen
             out.puts "alias #{@namespace}.{\n"
             out.indent do
               out.puts "#{type_reference union_discriminant, union_name_camelize},"
-              union.arms.each_with_index do |arm, i|
-                arm_name = arm.void? ? "Void" : "#{type_reference arm, arm.name.camelize}"
-                out.puts "#{arm_name}#{comma_unless_last(i, union.arms)}"
-                render_other_type(arm)
+              alias_list = ""
+              union.arms.each_with_index do |m, i|
+                name = m.void? ? "Void" : "#{type_reference m, m.name.camelize}"
+                unless alias_list.include?(name)
+                  alias_list += "#{name}#{comma_unless_last(i, union.arms)}\n"
+                  render_other_type(m)
+                end
               end
+              out.puts alias_list
             end
             out.puts "}\n\n"
 
@@ -388,14 +392,19 @@ module Xdrgen
 
             out.puts "@type value ::"
             out.indent(4) do
-              union.arms.each_with_index do |arm, i|
-                arm_name = arm.void? ? "Void" : "#{type_reference arm, arm.name.camelize}"
+              type_list = ""
+              union.arms.each_with_index do |m, i|
+                name = m.void? ? "Void" : "#{type_reference m, m.name.camelize}"
                 if i == 0
-                  out.puts "#{arm_name}.t()"
+                  out.puts "#{name}.t()"
                 else
-                  out.puts "| #{arm_name}.t()"
+                  unless type_list.include?(name)
+                    type_list += "| #{name}.t()\n"
+                    render_other_type(m)
+                  end
                 end
               end
+              out.puts type_list
 
               if union.default_arm.present?
                 out.puts "| any()"
@@ -927,9 +936,9 @@ module Xdrgen
         end
 
         unless is_struct
-          file_name_main = "#{typedef.name.downcase.underscore}.ex"
+          file_name_main = "#{typedef.name.underscore.downcase}.ex"
           out_main = @output.open(file_name_main)
-          render_define_block(out_main, typedef.name.downcase) do
+          render_define_block(out_main, typedef.name) do
             out_main.indent do
               out_main.puts "alias #{@namespace}.#{type}#{size}\n\n"
   
