@@ -92,11 +92,21 @@ module Xdrgen
           unless number.nil?
             render_typedef(type, true)
           else
-            if type.declaration.type.sub_type == :optional
+            case type.declaration.type.sub_type
+            when :optional
               variable = type.declaration.type
               base_type = type_string(variable)
               name = type_reference(type, type.name.camelize)
               build_optional_typedef(type, base_type.downcase, name)
+            when :var_array, :array
+              variable = type.declaration.type
+              base_type = type_string(variable)
+              name = type_reference(type, type.name.camelize)
+              if type.declaration.type.sub_type == :var_array
+                build_list_typedef(name, base_type, "VariableList", variable)
+              else
+                build_list_typedef(name, base_type, "FixedList", variable)
+              end
             end
           end
         rescue => exception
@@ -349,6 +359,7 @@ module Xdrgen
               union.arms.each_with_index do |arm, i|
                 arm_name = arm.void? ? "Void" : "#{type_reference arm, arm.name.camelize}"
                 out.puts "#{arm_name}#{comma_unless_last(i, union.arms)}"
+                render_other_type(arm)
               end
             end
             out.puts "}\n\n"
@@ -976,8 +987,8 @@ module Xdrgen
         end
       end
 
-      def build_list_typedef(typedef, base_type, list_type, type)
-        file_name = "#{typedef.name.underscore.downcase}.ex"
+      def build_list_typedef(module_name, base_type, list_type, type)
+        file_name = "#{module_name.underscore.downcase}.ex"
         out = @output.open(file_name)
 
         is_named, size = type.array_size
@@ -987,7 +998,7 @@ module Xdrgen
           is_named ? @constants["#{size.underscore.downcase}"] : size
         end
 
-        render_define_block(out, typedef.name) do
+        render_define_block(out, module_name) do
           out.indent do
             out.puts "alias #{@namespace}.#{base_type}\n\n"
 
@@ -1059,9 +1070,9 @@ module Xdrgen
           when :optional
             build_optional_typedef(typedef, base_type.downcase, name)
           when :array
-            build_list_typedef(typedef, base_type, "FixedArray", type)
+            build_list_typedef(name, base_type, "FixedArray", type)
           when :var_array
-            build_list_typedef(typedef, base_type, "VariableArray", type)
+            build_list_typedef(name, base_type, "VariableArray", type)
           else
           case type
             when AST::Typespecs::Bool
