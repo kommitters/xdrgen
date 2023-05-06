@@ -16,10 +16,10 @@ defmodule MyXDR.IntUnion do
     MultiList
   }
 
-  @arms [
-    0: Error,
-    1: MultiList
-  ]
+  @arms %{
+    0 => Error,
+    1 => MultiList
+  }
 
   @type value ::
           Error.t()
@@ -30,11 +30,12 @@ defmodule MyXDR.IntUnion do
   defstruct [:value, :type]
 
   @spec new(value :: value(), type :: Int.t()) :: t()
-  def new(value, %Int{} = type), do: %__MODULE__{value: value, type: type}
+  def new(value, type), do: %__MODULE__{value: value, type: type}
 
   @impl true
   def encode_xdr(%__MODULE__{value: value, type: type}) do
     type
+    |> XDR.Int.new()
     |> XDR.Union.new(@arms, value)
     |> XDR.Union.encode_xdr()
   end
@@ -42,6 +43,7 @@ defmodule MyXDR.IntUnion do
   @impl true
   def encode_xdr!(%__MODULE__{value: value, type: type}) do
     type
+    |> XDR.Int.new()
     |> XDR.Union.new(@arms, value)
     |> XDR.Union.encode_xdr!()
   end
@@ -66,7 +68,7 @@ defmodule MyXDR.IntUnion do
 
   @spec union_spec() :: XDR.Union.t()
   defp union_spec do
-    nil
+    0
     |> Int.new()
     |> XDR.Union.new(@arms)
   end

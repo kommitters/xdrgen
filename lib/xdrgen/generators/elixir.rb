@@ -347,6 +347,7 @@ module Xdrgen
         union_name = name union
         union_name_camelize = union.name.camelize
         union_discriminant = union.discriminant
+        is_number_type = is_number_type?(type_reference union_discriminant, union_name_camelize)
 
         file_name = "#{union_name.underscore}.ex"
         out = @output.open(file_name)
@@ -368,19 +369,19 @@ module Xdrgen
             end
             out.puts "}\n\n"
 
-            out.puts "@arms ["
+            out.puts "@arms #{is_number_type ? "%{" : "["}"
             out.indent do
               union.normal_arms.each_with_index do |arm, i|
                 arm_name = arm.void? ? "Void" : "#{type_reference arm, arm.name.camelize}"
 
                 arm.cases.each do |acase|
                   switch = if acase.value.is_a?(AST::Identifier)
-                    "#{member_name(acase.value)}"
+                    "#{member_name(acase.value)}:"
                   else
-                    acase.value.text_value
+                    "#{acase.value.text_value} =>"
                   end
 
-                  out.puts "#{switch}: #{arm_name}#{comma_unless_last(i, union.arms)}"
+                  out.puts "#{switch} #{arm_name}#{comma_unless_last(i, union.arms)}"
                 end
               end
 
@@ -388,7 +389,7 @@ module Xdrgen
                 out.puts "default: #{type_reference union.default_arm, union.default_arm.name.camelize}"
               end
             end
-            out.puts "]\n\n"
+            out.puts "#{is_number_type ? "}" : "]"}\n\n"
 
             out.puts "@type value ::"
             out.indent(4) do
@@ -418,12 +419,13 @@ module Xdrgen
             out.puts "defstruct [:value, :type]\n\n"
 
             out.puts "@spec new(value :: value(), type :: #{type_reference union_discriminant, union_name_camelize}.t()) :: t()\n"
-            out.puts "def new(value, %#{type_reference union_discriminant, union_name_camelize}{} = type), do: %__MODULE__{value: value, type: type}\n\n"
+            out.puts "def new(value, #{is_number_type ? "" : "%#{type_reference union_discriminant, union_name_camelize}{} = "}type), do: %__MODULE__{value: value, type: type}\n\n"
 
             out.puts "@impl true"
             out.puts "def encode_xdr(%__MODULE__{value: value, type: type}) do\n"
             out.indent do
               out.puts "type\n"
+              out.puts "|> XDR.#{type_reference union_discriminant, union_name_camelize}.new()\n" if is_number_type
               out.puts "|> XDR.Union.new(@arms, value)\n"
               out.puts "|> XDR.Union.encode_xdr()\n"
             end
@@ -433,6 +435,7 @@ module Xdrgen
             out.puts "def encode_xdr!(%__MODULE__{value: value, type: type}) do\n"
             out.indent do
               out.puts "type\n"
+              out.puts "|> XDR.#{type_reference union_discriminant, union_name_camelize}.new()\n" if is_number_type
               out.puts "|> XDR.Union.new(@arms, value)\n"
               out.puts "|> XDR.Union.encode_xdr!()\n"
             end
@@ -465,7 +468,7 @@ module Xdrgen
             out.puts "@spec union_spec() :: XDR.Union.t()"
             out.puts "defp union_spec do"
             out.indent do
-              out.puts "nil\n"
+              out.puts "#{is_number_type ? 0 : "nil"}\n"
               out.puts "|> #{type_reference union_discriminant, union_name_camelize}.new()\n"
               out.puts "|> XDR.Union.new(@arms)\n"
             end
@@ -484,8 +487,13 @@ module Xdrgen
         out.close
       end
 
-      def const_name(named)
-        named.name.underscore.upcase
+      def is_number_type?(type)
+        case type
+        when "Int", "DoubleFloat", "Float", "HyperInt", "UInt", "HyperUInt"
+          true
+        else
+          false
+        end
       end
 
       def member_name(member)
@@ -1008,8 +1016,6 @@ module Xdrgen
           size = is_named ? @constants["#{size.underscore.downcase}"] : size
           length_nil = false
         end
-
-        
 
         render_define_block(out, module_name) do
           out.indent do
