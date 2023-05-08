@@ -364,12 +364,12 @@ module Xdrgen
         union_name = name union
         union_name_camelize = union.name.camelize
         union_discriminant = union.discriminant
-        is_number_type = is_number_type?(type_reference union_discriminant, union_name_camelize)
+        is_number_type = is_number_type?(union)
 
         file_name = "#{union_name.underscore}.ex"
         out = @output.open(file_name)
 
-        render_define_block(out, union_name) do 
+        render_define_block(out, union_name) do
           out.indent do
             out.puts "alias #{@namespace}.{\n"
             out.indent do
@@ -526,12 +526,15 @@ module Xdrgen
         out.close
       end
 
-      def is_number_type?(type)
-        case type
-        when "Int", "DoubleFloat", "Float", "HyperInt", "UInt", "HyperUInt"
-          true
-        else
-          false
+      def is_number_type?(union)
+        union.normal_arms.each do |arm|
+          arm.cases.each do |acase|
+            if acase.value.is_a?(AST::Identifier)
+              false
+            else
+              true
+            end
+          end
         end
       end
 
