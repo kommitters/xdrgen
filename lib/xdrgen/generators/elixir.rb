@@ -904,61 +904,63 @@ module Xdrgen
 
         unless size.nil?
           file_name = "#{type.underscore.downcase}#{size}.ex"
-          out = @output.open(file_name)
-
-          render_define_block(out, name) do 
-            out.indent do
-              out.puts "@type t :: %__MODULE__{opaque: binary()}\n\n"
-
-              out.puts "defstruct [:opaque]\n\n"
-
-              out.puts "@#{type.downcase == "opaque" ? "length" : "max_size"} #{size}\n\n"
-
-              out.puts "@opaque_spec XDR.#{xdr_module}.new(nil, @#{type.downcase == "opaque" ? "length" : "max_size"})\n\n"
-
-              out.puts "@spec new(opaque :: binary()) :: t()\n"
-              out.puts "def new(opaque), do: %__MODULE__{opaque: opaque}\n\n"
-
-              out.puts "@impl true"
-              out.puts "def encode_xdr(%__MODULE__{opaque: opaque}) do\n"
+          begin
+            out = @output.open(file_name)
+            render_define_block(out, name) do 
               out.indent do
-                out.puts "XDR.#{xdr_module}.encode_xdr(%XDR.#{xdr_module}{opaque: opaque, #{type.downcase == "opaque" ? "length: @length" : "max_size: @max_size"}})\n"
-              end
-              out.puts "end\n\n"
-
-              out.puts "@impl true"
-              out.puts "def encode_xdr!(%__MODULE__{opaque: opaque}) do\n"
-              out.indent do
-                out.puts "XDR.#{xdr_module}.encode_xdr!(%XDR.#{xdr_module}{opaque: opaque, #{type.downcase == "opaque" ? "length: @length" : "max_size: @max_size"}})\n"
-              end
-              out.puts "end\n\n"
-
-              out.puts "@impl true"
-              out.puts "def decode_xdr(bytes, spec \\\\ @opaque_spec)\n\n"
-
-              out.puts "def decode_xdr(bytes, spec) do\n"
-              out.indent do
-                out.puts "case XDR.#{xdr_module}.decode_xdr(bytes, spec) do\n"
+                out.puts "@type t :: %__MODULE__{opaque: binary()}\n\n"
+  
+                out.puts "defstruct [:opaque]\n\n"
+  
+                out.puts "@#{type.downcase == "opaque" ? "length" : "max_size"} #{size}\n\n"
+  
+                out.puts "@opaque_spec XDR.#{xdr_module}.new(nil, @#{type.downcase == "opaque" ? "length" : "max_size"})\n\n"
+  
+                out.puts "@spec new(opaque :: binary()) :: t()\n"
+                out.puts "def new(opaque), do: %__MODULE__{opaque: opaque}\n\n"
+  
+                out.puts "@impl true"
+                out.puts "def encode_xdr(%__MODULE__{opaque: opaque}) do\n"
                 out.indent do
-                  out.puts "{:ok, {%XDR.#{xdr_module}{opaque: opaque}, rest}} -> {:ok, {new(opaque), rest}}\n"
-                  out.puts "error -> error\n"
+                  out.puts "XDR.#{xdr_module}.encode_xdr(%XDR.#{xdr_module}{opaque: opaque, #{type.downcase == "opaque" ? "length: @length" : "max_size: @max_size"}})\n"
+                end
+                out.puts "end\n\n"
+  
+                out.puts "@impl true"
+                out.puts "def encode_xdr!(%__MODULE__{opaque: opaque}) do\n"
+                out.indent do
+                  out.puts "XDR.#{xdr_module}.encode_xdr!(%XDR.#{xdr_module}{opaque: opaque, #{type.downcase == "opaque" ? "length: @length" : "max_size: @max_size"}})\n"
+                end
+                out.puts "end\n\n"
+  
+                out.puts "@impl true"
+                out.puts "def decode_xdr(bytes, spec \\\\ @opaque_spec)\n\n"
+  
+                out.puts "def decode_xdr(bytes, spec) do\n"
+                out.indent do
+                  out.puts "case XDR.#{xdr_module}.decode_xdr(bytes, spec) do\n"
+                  out.indent do
+                    out.puts "{:ok, {%XDR.#{xdr_module}{opaque: opaque}, rest}} -> {:ok, {new(opaque), rest}}\n"
+                    out.puts "error -> error\n"
+                  end
+                  out.puts "end\n"
+                end
+                out.puts "end\n\n"
+  
+                out.puts "@impl true"
+                out.puts "def decode_xdr!(bytes, spec \\\\ @opaque_spec)\n\n"
+  
+                out.puts "def decode_xdr!(bytes, spec) do\n"
+                out.indent do
+                  out.puts "{%XDR.#{xdr_module}{opaque: opaque}, rest} = XDR.#{xdr_module}.decode_xdr!(bytes)\n"
+                  out.puts "{new(opaque), rest}\n"
                 end
                 out.puts "end\n"
               end
-              out.puts "end\n\n"
-
-              out.puts "@impl true"
-              out.puts "def decode_xdr!(bytes, spec \\\\ @opaque_spec)\n\n"
-
-              out.puts "def decode_xdr!(bytes, spec) do\n"
-              out.indent do
-                out.puts "{%XDR.#{xdr_module}{opaque: opaque}, rest} = XDR.#{xdr_module}.decode_xdr!(bytes)\n"
-                out.puts "{new(opaque), rest}\n"
-              end
-              out.puts "end\n"
             end
+            out.close
+          rescue => exception
           end
-          out.close
         end
 
         unless is_struct

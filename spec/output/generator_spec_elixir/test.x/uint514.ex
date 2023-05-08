@@ -10,7 +10,7 @@ defmodule MyXDR.Uint514 do
 
   @behaviour XDR.Declaration
 
-  alias MyXDR.VariableOpaque
+  alias MyXDR.VariableOpaque64
 
   @type t :: %__MODULE__{value: binary()}
 
@@ -22,23 +22,23 @@ defmodule MyXDR.Uint514 do
   @impl true
   def encode_xdr(%__MODULE__{value: value}) do
     value
-    |> VariableOpaque.new()
-    |> VariableOpaque.encode_xdr()
+    |> VariableOpaque64.new()
+    |> VariableOpaque64.encode_xdr()
   end
 
   @impl true
   def encode_xdr!(%__MODULE__{opaque: opaque}) do
     value
-    |> VariableOpaque.new()
-    |> VariableOpaque.encode_xdr()
+    |> VariableOpaque64.new()
+    |> VariableOpaque64.encode_xdr()
   end
 
   @impl true
   def decode_xdr(bytes, term \\ nil)
 
   def decode_xdr(bytes, _term) do
-    case XDR.VariableOpaque.decode_xdr(bytes, term) do
-      {:ok, {%XDR.VariableOpaque{opaque: value}, rest}} -> {:ok, {new(value), rest}}
+    case XDR.VariableOpaque64.decode_xdr(bytes, term) do
+      {:ok, {%XDR.VariableOpaque64{opaque: value}, rest}} -> {:ok, {new(value), rest}}
       error -> error
     end
   end
@@ -47,7 +47,7 @@ defmodule MyXDR.Uint514 do
   def decode_xdr!(bytes, term \\ nil)
 
   def decode_xdr!(bytes, _term) do
-    {%XDR.VariableOpaque{opaque: value}, rest} = XDR.VariableOpaque.decode_xdr!(bytes)
+    {%XDR.VariableOpaque64{opaque: value}, rest} = XDR.VariableOpaque64.decode_xdr!(bytes)
     {new(value), rest}
   end
 end
