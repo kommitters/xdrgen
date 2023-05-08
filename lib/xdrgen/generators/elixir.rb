@@ -527,15 +527,17 @@ module Xdrgen
       end
 
       def is_number_type?(union)
+        value = false
         union.normal_arms.each do |arm|
           arm.cases.each do |acase|
-            if acase.value.is_a?(AST::Identifier)
+            value = if acase.value.is_a?(AST::Identifier)
               false
             else
               true
             end
           end
         end
+        value
       end
 
       def member_name(member)
