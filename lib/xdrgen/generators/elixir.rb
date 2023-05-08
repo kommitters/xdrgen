@@ -401,7 +401,6 @@ module Xdrgen
                 else
                   unless type_list.include?(name)
                     type_list += "| #{name}.t()\n"
-                    render_other_type(m)
                   end
                 end
               end
@@ -510,8 +509,10 @@ module Xdrgen
         case decl.type.sub_type
           when :optional
             "Optional#{type_hint}"
-          when :var_array, :array
+          when :var_array
             "#{type_hint}List"
+          when :array
+            "#{type_hint}FixedList"
           else
             type_hint
         end
