@@ -103,6 +103,10 @@ module Xdrgen
               base_type = type_string(variable)
               name = type_reference(type, type.name.camelize)
               if type.declaration.type.sub_type == :var_array
+                is_named, size = type.declaration.type.array_size
+                size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                length_nil = type.declaration.type.decl.resolved_size.nil?
+                name = "#{name}#{size unless length_nil}"
                 build_list_typedef(name, base_type, "VariableArray", variable)
               else
                 build_list_typedef(name, base_type, "FixedArray", variable)
@@ -126,6 +130,12 @@ module Xdrgen
               struct.members.each_with_index do |m, i|
                 name = type_reference m, m.name.camelize
                 unless alias_list.include?(name)
+                  if m.declaration.type.sub_type == :var_array
+                    is_named, size = m.declaration.type.array_size
+                    size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                    length_nil = m.declaration.type.decl.resolved_size.nil?
+                    name = "#{name}#{size unless length_nil}"
+                  end
                   alias_list += "#{name}#{comma_unless_last(i, struct.members)}\n"
                   render_other_type(m)
                 end
@@ -137,7 +147,14 @@ module Xdrgen
             out.puts "@struct_spec XDR.Struct.new("
             out.indent do
               struct.members.each_with_index do |m, i|
-                out.puts "#{m.name.underscore.downcase}: #{type_reference m, m.name.camelize}#{comma_unless_last(i, struct.members)}"
+                module_name = type_reference m, m.name.camelize
+                if m.declaration.type.sub_type == :var_array
+                  is_named, size = m.declaration.type.array_size
+                  size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                  length_nil = m.declaration.type.decl.resolved_size.nil?
+                  module_name = "#{module_name}#{size unless length_nil}"
+                end
+                out.puts "#{m.name.underscore.downcase}: #{module_name}#{comma_unless_last(i, struct.members)}"
               end
             end
             out.puts ")\n\n"
