@@ -378,6 +378,14 @@ module Xdrgen
               union.arms.each_with_index do |m, i|
                 name = m.void? ? "Void" : "#{type_reference m, m.name.camelize}"
                 unless alias_list.include?(name)
+                  unless m.void?
+                    if m.declaration.type.sub_type == :var_array
+                      is_named, size = m.declaration.type.array_size
+                      size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                      length_nil = m.declaration.type.decl.resolved_size.nil?
+                      name = "#{name}#{size unless length_nil}"
+                    end
+                  end
                   alias_list += "#{name}#{comma_unless_last(i, union.arms)}\n"
                   render_other_type(m)
                 end
@@ -390,7 +398,14 @@ module Xdrgen
             out.indent do
               union.normal_arms.each_with_index do |arm, i|
                 arm_name = arm.void? ? "Void" : "#{type_reference arm, arm.name.camelize}"
-
+                unless arm.void?
+                  if arm.declaration.type.sub_type == :var_array
+                    is_named, size = arm.declaration.type.array_size
+                    size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                    length_nil = arm.declaration.type.decl.resolved_size.nil?
+                    arm_name = "#{arm_name}#{size unless length_nil}"
+                  end
+                end
                 arm.cases.each do |acase|
                   switch = if acase.value.is_a?(AST::Identifier)
                     "#{member_name(acase.value)}:"
@@ -413,6 +428,14 @@ module Xdrgen
               type_list = ""
               union.arms.each_with_index do |m, i|
                 name = m.void? ? "Void" : "#{type_reference m, m.name.camelize}"
+                unless m.void?
+                  if m.declaration.type.sub_type == :var_array
+                    is_named, size = m.declaration.type.array_size
+                    size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                    length_nil = m.declaration.type.decl.resolved_size.nil?
+                    name = "#{name}#{size unless length_nil}"
+                  end
+                end
                 if i == 0
                   type_list += "#{name}.t()\n"
                 else
