@@ -1032,7 +1032,7 @@ module Xdrgen
   
               out_main.puts "def decode_xdr(bytes, _term) do\n"
               out_main.indent do
-                out_main.puts "case XDR.#{type}#{size}.decode_xdr(bytes, term) do\n"
+                out_main.puts "case XDR.#{type}#{size}.decode_xdr(bytes) do\n"
                 out_main.indent do
                   out_main.puts "{:ok, {%XDR.#{type}#{size}{opaque: value}, rest}} -> {:ok, {new(value), rest}}\n"
                   out_main.puts "error -> error\n"
@@ -1125,7 +1125,7 @@ module Xdrgen
 
             out.puts "def decode_xdr!(bytes, spec) do\n"
             out.indent do
-              out.puts "{items, rest} = XDR.{list_type}.decode_xdr!(bytes, spec)\n"
+              out.puts "{items, rest} = XDR.#{list_type}.decode_xdr!(bytes, spec)\n"
               out.puts "{new(items), rest}\n"
             end
             out.puts "end\n"

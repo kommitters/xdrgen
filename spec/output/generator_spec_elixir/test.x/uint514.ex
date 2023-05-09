@@ -37,7 +37,7 @@ defmodule MyXDR.UInt514 do
   def decode_xdr(bytes, term \\ nil)
 
   def decode_xdr(bytes, _term) do
-    case XDR.VariableOpaque.decode_xdr(bytes, term) do
+    case XDR.VariableOpaque.decode_xdr(bytes) do
       {:ok, {%XDR.VariableOpaque{opaque: value}, rest}} -> {:ok, {new(value), rest}}
       error -> error
     end

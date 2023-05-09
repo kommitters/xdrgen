@@ -37,7 +37,7 @@ defmodule MyXDR.Hash do
   def decode_xdr(bytes, term \\ nil)
 
   def decode_xdr(bytes, _term) do
-    case XDR.Opaque32.decode_xdr(bytes, term) do
+    case XDR.Opaque32.decode_xdr(bytes) do
       {:ok, {%XDR.Opaque32{opaque: value}, rest}} -> {:ok, {new(value), rest}}
       error -> error
     end
