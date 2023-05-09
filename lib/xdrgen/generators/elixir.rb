@@ -918,11 +918,14 @@ module Xdrgen
 
             out.puts "def decode_xdr!(bytes, optional_spec) do\n"
             out.indent do
-              out.puts "{%XDR.Optional{identifier: #{attribute.underscore.downcase}}, rest} = XDR.Optional.decode_xdr!(bytes)\n"
-              out.puts "{new(#{attribute.underscore.downcase}), rest}\n"
-              out.puts "{nil, rest} -> {new(), rest}"
-            end
-            out.puts "end\n"
+              out.puts "case XDR.Optional.decode_xdr!(bytes, optional_spec) do\n"
+                out.indent do
+                  out.puts "{%XDR.Optional{type: #{attribute.underscore.downcase}}, rest} -> {new(#{attribute.underscore.downcase}), rest}\n"
+                  out.puts "{nil, rest} -> {new(), rest}"
+                end
+                out.puts "end\n"
+              end
+              out.puts "end\n\n"
           end
         end
         out.close
