@@ -92,28 +92,28 @@ module Xdrgen
       def render_other_type(type)
         begin
           number = type_reference(type, type.name.camelize).scan(/\d+/).first
-          unless number.nil?
-            render_typedef(type, true)
+          case type.declaration.type.sub_type
+          when :optional
+            variable = type.declaration.type
+            base_type = type_string(variable)
+            name = type_reference(type, type.name.camelize)
+            build_optional_typedef(type, base_type, name)
+          when :var_array, :array
+            variable = type.declaration.type
+            base_type = type_string(variable)
+            name = type_reference(type, type.name.camelize)
+            if type.declaration.type.sub_type == :var_array
+              is_named, size = type.declaration.type.array_size
+              size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+              length_nil = type.declaration.type.decl.resolved_size.nil?
+              name = "#{name}#{size unless length_nil}"
+              build_list_typedef(name, base_type, "VariableArray", variable)
+            else
+              build_list_typedef(name, base_type, "FixedArray", variable)
+            end
           else
-            case type.declaration.type.sub_type
-            when :optional
-              variable = type.declaration.type
-              base_type = type_string(variable)
-              name = type_reference(type, type.name.camelize)
-              build_optional_typedef(type, base_type, name)
-            when :var_array, :array
-              variable = type.declaration.type
-              base_type = type_string(variable)
-              name = type_reference(type, type.name.camelize)
-              if type.declaration.type.sub_type == :var_array
-                is_named, size = type.declaration.type.array_size
-                size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
-                length_nil = type.declaration.type.decl.resolved_size.nil?
-                name = "#{name}#{size unless length_nil}"
-                build_list_typedef(name, base_type, "VariableArray", variable)
-              else
-                build_list_typedef(name, base_type, "FixedArray", variable)
-              end
+            unless number.nil?
+              render_typedef(type, true)
             end
           end
         rescue => exception
