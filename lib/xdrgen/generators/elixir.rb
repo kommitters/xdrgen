@@ -68,9 +68,12 @@ module Xdrgen
       end
 
       def render_define_block(out, module_name)
-        out.puts "defmodule #{@namespace}.#{module_name.upcase_first} do"
+        name = module_name.upcase_first
+        name = module_name.downcase.gsub("uint", "UInt") if module_name.downcase.include?("uint")
+
+        out.puts "defmodule #{@namespace}.#{name} do"
         out.indent do
-          render_moduledoc(out, module_name)
+          render_moduledoc(out, name)
         end
         yield
       ensure
