@@ -41,9 +41,9 @@ defmodule Int do
   end
 end
 
-defmodule UInt do
+defmodule Uint do
   @moduledoc """
-  Representation of Stellar `UInt` type.
+  Representation of Stellar `Uint` type.
   """
 
   @behaviour XDR.Declaration
