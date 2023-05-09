@@ -984,7 +984,7 @@ module Xdrgen
   
                 out.puts "def decode_xdr!(bytes, spec) do\n"
                 out.indent do
-                  out.puts "{%XDR.#{xdr_module}{opaque: opaque}, rest} = XDR.#{xdr_module}.decode_xdr!(bytes)\n"
+                  out.puts "{%XDR.#{xdr_module}{opaque: opaque}, rest} = XDR.#{xdr_module}.decode_xdr!(bytes, spec)\n"
                   out.puts "{new(opaque), rest}\n"
                 end
                 out.puts "end\n"
