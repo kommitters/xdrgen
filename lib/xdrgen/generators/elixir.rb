@@ -160,7 +160,14 @@ module Xdrgen
             out.puts ")\n\n"
 
             struct.members.each_with_index do |m, i|
-              out.puts "@type #{m.name.underscore.downcase} :: #{type_reference m, m.name.camelize}.t()"
+              module_name = type_reference m, m.name.camelize
+              if m.declaration.type.sub_type == :var_array
+                is_named, size = m.declaration.type.array_size
+                size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                length_nil = m.declaration.type.decl.resolved_size.nil?
+                module_name = "#{module_name}#{size unless length_nil}"
+              end
+              out.puts "@type #{m.name.underscore.downcase} :: #{module_name}.t()"
             end
             out.puts "\n"
 
@@ -188,7 +195,14 @@ module Xdrgen
             out.puts "def new("
             out.indent do
               struct.members.each_with_index do |m, i|
-                out.puts "%#{type_reference m, m.name.camelize}{} = #{m.name.underscore.downcase}#{comma_unless_last(i, struct.members)}"
+                module_name = type_reference m, m.name.camelize
+                if m.declaration.type.sub_type == :var_array
+                  is_named, size = m.declaration.type.array_size
+                  size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                  length_nil = m.declaration.type.decl.resolved_size.nil?
+                  module_name = "#{module_name}#{size unless length_nil}"
+                end
+                out.puts "%#{module_name}{} = #{m.name.underscore.downcase}#{comma_unless_last(i, struct.members)}"
               end
             end
             out.puts "),\n"
@@ -1029,9 +1043,9 @@ module Xdrgen
   
               out_main.puts "def decode_xdr(bytes, _term) do\n"
               out_main.indent do
-                out_main.puts "case XDR.#{type}#{size}.decode_xdr(bytes) do\n"
+                out_main.puts "case #{type}#{size}.decode_xdr(bytes) do\n"
                 out_main.indent do
-                  out_main.puts "{:ok, {%XDR.#{type}#{size}{opaque: value}, rest}} -> {:ok, {new(value), rest}}\n"
+                  out_main.puts "{:ok, {%#{type}#{size}{opaque: value}, rest}} -> {:ok, {new(value), rest}}\n"
                   out_main.puts "error -> error\n"
                 end
                 out_main.puts "end\n"
@@ -1043,7 +1057,7 @@ module Xdrgen
   
               out_main.puts "def decode_xdr!(bytes, _term) do\n"
               out_main.indent do
-                out_main.puts "{%XDR.#{type}#{size}{opaque: value}, rest} = XDR.#{type}#{size}.decode_xdr!(bytes)\n"
+                out_main.puts "{%#{type}#{size}{opaque: value}, rest} = #{type}#{size}.decode_xdr!(bytes)\n"
                 out_main.puts "{new(value), rest}\n"
               end
               out_main.puts "end\n"
