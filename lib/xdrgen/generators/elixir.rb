@@ -461,13 +461,12 @@ module Xdrgen
             out.puts "defstruct [:value, :type]\n\n"
 
             out.puts "@spec new(value :: value(), type :: #{type_reference union_discriminant, union_name_camelize}.t()) :: t()\n"
-            out.puts "def new(value, #{is_number_type ? "" : "%#{type_reference union_discriminant, union_name_camelize}{} = "}type), do: %__MODULE__{value: value, type: type}\n\n"
+            out.puts "def new(value, %#{type_reference union_discriminant, union_name_camelize}{} = type), do: %__MODULE__{value: value, type: type}\n\n"
 
             out.puts "@impl true"
             out.puts "def encode_xdr(%__MODULE__{value: value, type: type}) do\n"
             out.indent do
               out.puts "type\n"
-              out.puts "|> XDR.#{type_reference union_discriminant, union_name_camelize}.new()\n" if is_number_type
               out.puts "|> XDR.Union.new(@arms, value)\n"
               out.puts "|> XDR.Union.encode_xdr()\n"
             end
@@ -477,7 +476,6 @@ module Xdrgen
             out.puts "def encode_xdr!(%__MODULE__{value: value, type: type}) do\n"
             out.indent do
               out.puts "type\n"
-              out.puts "|> XDR.#{type_reference union_discriminant, union_name_camelize}.new()\n" if is_number_type
               out.puts "|> XDR.Union.new(@arms, value)\n"
               out.puts "|> XDR.Union.encode_xdr!()\n"
             end
