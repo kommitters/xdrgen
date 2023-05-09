@@ -800,7 +800,7 @@ module Xdrgen
             out.puts "defstruct [:value]\n\n"
 
             unless typedef.declaration.type.size.nil?
-              out.puts "@max_lenght #{typedef.declaration.type.size}\n\n"
+              out.puts "@max_length #{typedef.declaration.type.size}\n\n"
             end
 
             out.puts "@spec new(value :: String.t()) :: t()\n"
