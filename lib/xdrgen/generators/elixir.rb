@@ -1019,7 +1019,7 @@ module Xdrgen
               out_main.puts "end\n\n"
   
               out_main.puts "@impl true"
-              out_main.puts "def encode_xdr!(%__MODULE__{opaque: opaque}) do\n"
+              out_main.puts "def encode_xdr!(%__MODULE__{value: value}) do\n"
               out_main.indent do
                 out_main.puts "value\n"
                 out_main.puts "|> #{type}#{size}.new()\n"
