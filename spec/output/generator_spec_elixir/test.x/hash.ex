@@ -30,7 +30,7 @@ defmodule MyXDR.Hash do
   def encode_xdr!(%__MODULE__{value: value}) do
     value
     |> Opaque32.new()
-    |> Opaque32.encode_xdr()
+    |> Opaque32.encode_xdr!()
   end
 
   @impl true

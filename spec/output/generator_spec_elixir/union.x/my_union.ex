@@ -21,28 +21,28 @@ defmodule MyXDR.MyUnion do
     MULTI: MultiList
   ]
 
-  @type value ::
+  @type my_union ::
           Error.t()
           | MultiList.t()
 
-  @type t :: %__MODULE__{value: value(), type: UnionKey.t()}
+  @type t :: %__MODULE__{my_union: my_union(), type: UnionKey.t()}
 
-  defstruct [:value, :type]
+  defstruct [:my_union, :type]
 
-  @spec new(value :: value(), type :: UnionKey.t()) :: t()
-  def new(value, %UnionKey{} = type), do: %__MODULE__{value: value, type: type}
+  @spec new(my_union :: my_union(), type :: UnionKey.t()) :: t()
+  def new(my_union, %UnionKey{} = type), do: %__MODULE__{my_union: my_union, type: type}
 
   @impl true
-  def encode_xdr(%__MODULE__{value: value, type: type}) do
+  def encode_xdr(%__MODULE__{my_union: my_union, type: type}) do
     type
-    |> XDR.Union.new(@arms, value)
+    |> XDR.Union.new(@arms, my_union)
     |> XDR.Union.encode_xdr()
   end
 
   @impl true
-  def encode_xdr!(%__MODULE__{value: value, type: type}) do
+  def encode_xdr!(%__MODULE__{my_union: my_union, type: type}) do
     type
-    |> XDR.Union.new(@arms, value)
+    |> XDR.Union.new(@arms, my_union)
     |> XDR.Union.encode_xdr!()
   end
 
@@ -51,7 +51,7 @@ defmodule MyXDR.MyUnion do
 
   def decode_xdr(bytes, spec) do
     case XDR.Union.decode_xdr(bytes, spec) do
-      {:ok, {{type, value}, rest}} -> {:ok, {new(value, type), rest}}
+      {:ok, {{type, my_union}, rest}} -> {:ok, {new(my_union, type), rest}}
       error -> error
     end
   end
@@ -60,8 +60,8 @@ defmodule MyXDR.MyUnion do
   def decode_xdr!(bytes, spec \\ union_spec())
 
   def decode_xdr!(bytes, spec) do
-    {{type, value}, rest} = XDR.Union.decode_xdr!(bytes, spec)
-    {new(value, type), rest}
+    {{type, my_union}, rest} = XDR.Union.decode_xdr!(bytes, spec)
+    {new(my_union, type), rest}
   end
 
   @spec union_spec() :: XDR.Union.t()

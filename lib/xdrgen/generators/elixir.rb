@@ -1052,7 +1052,7 @@ module Xdrgen
               out_main.indent do
                 out_main.puts "value\n"
                 out_main.puts "|> #{type}#{size}.new()\n"
-                out_main.puts "|> #{type}#{size}.encode_xdr()\n"
+                out_main.puts "|> #{type}#{size}.encode_xdr!()\n"
               end
               out_main.puts "end\n\n"
   

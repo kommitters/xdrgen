@@ -30,7 +30,7 @@ defmodule MyXDR.Uint513 do
   def encode_xdr!(%__MODULE__{value: value}) do
     value
     |> VariableOpaque64.new()
-    |> VariableOpaque64.encode_xdr()
+    |> VariableOpaque64.encode_xdr!()
   end
 
   @impl true
