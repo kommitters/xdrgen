@@ -173,7 +173,7 @@ module Xdrgen
 
             types = "@type t :: %__MODULE__{"
               struct.members.each_with_index do |m, i|
-              types += "#{m.name.underscore.downcase}: #{m.name.underscore.downcase}()#{comma_and_space_unless_last(i, struct.members)}"
+              types += "#{m.name.underscore.downcase}: type_#{m.name.underscore.downcase}()#{comma_and_space_unless_last(i, struct.members)}"
               end
             types += "}\n\n"
             out.puts types
@@ -187,7 +187,7 @@ module Xdrgen
 
             spec = "@spec new("
               struct.members.each_with_index do |m, i|
-              spec += "#{m.name.underscore.downcase} :: #{m.name.underscore.downcase}()#{comma_and_space_unless_last(i, struct.members)}"
+              spec += "#{m.name.underscore.downcase} :: type_#{m.name.underscore.downcase}()#{comma_and_space_unless_last(i, struct.members)}"
               end
             spec += ") :: t()\n"
             out.puts spec
