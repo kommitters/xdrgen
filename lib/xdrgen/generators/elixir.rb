@@ -420,14 +420,13 @@ module Xdrgen
                     arm_name = "#{arm_name}#{size unless length_nil}"
                   end
                 end
-                arm.cases.each do |acase|
+                arm.cases.each_with_index do |acase, o|
                   switch = if acase.value.is_a?(AST::Identifier)
                     "#{member_name(acase.value)}:"
                   else
                     "#{acase.value.text_value} =>"
                   end
-
-                  out.puts "#{switch} #{arm_name}#{comma_unless_last(i, union.arms)}"
+                  out.puts "#{switch} #{arm_name}#{(union.arms.count <= (i + 1)) && ((o + 1) >= arm.cases.count) ? "" : ","}"
                 end
               end
 
