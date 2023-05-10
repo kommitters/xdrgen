@@ -126,8 +126,8 @@ module Xdrgen
           out.indent do
             out.puts "alias #{@namespace}.{\n"
             out.indent do
-              alias_list = ""
-              struct.members.each_with_index do |m, i|
+              alias_list = []
+              struct.members.each do |m|
                 name = type_reference m, m.name.camelize
                 unless alias_list.include?(name)
                   if m.declaration.type.sub_type == :var_array
@@ -136,11 +136,14 @@ module Xdrgen
                     length_nil = m.declaration.type.decl.resolved_size.nil?
                     name = "#{name}#{size unless length_nil}"
                   end
-                  alias_list += "#{name}#{comma_unless_last(i, struct.members)}\n"
+                  alias_list << name
                   render_other_type(m)
                 end
               end
-              out.puts alias_list
+
+              alias_list.each_with_index do |m, i|
+                out.puts "#{m}#{comma_unless_last(i, alias_list)}"
+              end
             end
             out.puts "}\n\n"
 
@@ -389,7 +392,7 @@ module Xdrgen
             out.indent do
               out.puts "#{type_reference union_discriminant, union_name_camelize},"
               alias_list = []
-              union.arms.each_with_index do |m, i|
+              union.arms.each do |m|
                 name = m.void? ? "Void" : "#{type_reference m, m.name.camelize}"
                 unless alias_list.include?(name)
                   unless m.void?
@@ -613,9 +616,10 @@ module Xdrgen
             "Int"
           when AST::Typespecs::Opaque
             if type.fixed?
-              "Opaque#{type.size}"
+              size = (type.size.scan(/\D/).any? ? @constants["#{type.size.underscore.downcase}"] : type.size)
+              "Opaque#{size}"
             else
-              type.size ? "VariableOpaque#{type.size}" : "VariableOpaque"
+              type.size ? "VariableOpaque#{(type.size.scan(/\D/).any? ? @constants["#{type.size.underscore.downcase}"] : type.size)}" : "VariableOpaque"
             end
           when AST::Typespecs::Quadruple
             raise "no quadruple support in elixir"
