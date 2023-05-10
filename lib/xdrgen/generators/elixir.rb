@@ -945,6 +945,7 @@ module Xdrgen
       end
 
       def build_opaque_typedef(typedef, type, xdr_module, size = nil, is_struct)
+        size = (size.scan(/\D/).any? ? @constants["#{size.underscore.downcase}"] : size) unless size.nil?
         name = "#{type}#{size}"
 
         unless size.nil?
