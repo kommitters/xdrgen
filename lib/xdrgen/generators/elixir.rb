@@ -818,17 +818,17 @@ module Xdrgen
       def build_string_typedef(typedef, is_struct)
         name = is_struct ? type_string(typedef.declaration.type) : typedef.name
 
-        file_name = "#{name.downcase.underscore}.ex"
+        file_name = "#{name.underscore.downcase}.ex"
         out = @output.open(file_name)
 
-        render_define_block(out, name.downcase) do 
+        render_define_block(out, name) do 
           out.indent do
             out.puts "@type t :: %__MODULE__{value: String.t()}\n\n"
 
             out.puts "defstruct [:value]\n\n"
 
             unless typedef.declaration.type.size.nil?
-              out.puts "@max_length #{typedef.declaration.type.size}\n\n"
+              out.puts "@max_length #{get_size(typedef.declaration.type.size)}\n\n"
             end
 
             out.puts "@spec new(value :: String.t()) :: t()\n"
