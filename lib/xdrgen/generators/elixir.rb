@@ -388,7 +388,7 @@ module Xdrgen
             out.puts "alias #{@namespace}.{\n"
             out.indent do
               out.puts "#{type_reference union_discriminant, union_name_camelize},"
-              alias_list = ""
+              alias_list = []
               union.arms.each_with_index do |m, i|
                 name = m.void? ? "Void" : "#{type_reference m, m.name.camelize}"
                 unless alias_list.include?(name)
@@ -400,11 +400,14 @@ module Xdrgen
                       name = "#{name}#{size unless length_nil}"
                     end
                   end
-                  alias_list += "#{name}#{comma_unless_last(i, union.arms)}\n"
+                  alias_list << name
                   render_other_type(m)
                 end
               end
-              out.puts alias_list
+
+              alias_list.each_with_index do |m, i|
+                out.puts "#{m}#{comma_unless_last(i, alias_list)}"
+              end
             end
             out.puts "}\n\n"
 
