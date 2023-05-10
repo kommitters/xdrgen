@@ -18,23 +18,23 @@ defmodule MyXDR.Arr do
 
   @array_spec %{type: @array_type, length: @length}
 
-  @type t :: %__MODULE__{ints: list(Int.t())}
+  @type t :: %__MODULE__{items: list(Int.t())}
 
-  defstruct [:ints]
+  defstruct [:items]
 
-  @spec new(ints :: list(Int.t())) :: t()
-  def new(ints), do: %__MODULE__{ints: ints}
+  @spec new(items :: list(Int.t())) :: t()
+  def new(items), do: %__MODULE__{items: items}
 
   @impl true
-  def encode_xdr(%__MODULE__{ints: ints}) do
-    ints
+  def encode_xdr(%__MODULE__{items: items}) do
+    items
     |> XDR.FixedArray.new(@array_type, @length)
     |> XDR.FixedArray.encode_xdr()
   end
 
   @impl true
-  def encode_xdr!(%__MODULE__{ints: ints}) do
-    ints
+  def encode_xdr!(%__MODULE__{items: items}) do
+    items
     |> XDR.FixedArray.new(@array_type, @length)
     |> XDR.FixedArray.encode_xdr!()
   end
@@ -44,7 +44,7 @@ defmodule MyXDR.Arr do
 
   def decode_xdr(bytes, spec) do
     case XDR.FixedArray.decode_xdr(bytes, spec) do
-      {:ok, {ints, rest}} -> {:ok, {new(ints), rest}}
+      {:ok, {items, rest}} -> {:ok, {new(items), rest}}
       error -> error
     end
   end
@@ -53,7 +53,7 @@ defmodule MyXDR.Arr do
   def decode_xdr!(bytes, spec \\ @array_spec)
 
   def decode_xdr!(bytes, spec) do
-    {ints, rest} = XDR.FixedArray.decode_xdr!(bytes, spec)
-    {new(ints), rest}
+    {items, rest} = XDR.FixedArray.decode_xdr!(bytes, spec)
+    {new(items), rest}
   end
 end

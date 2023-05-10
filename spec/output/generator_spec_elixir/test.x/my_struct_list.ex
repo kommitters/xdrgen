@@ -16,23 +16,23 @@ defmodule MyXDR.MyStructList do
 
   @array_spec %{type: @array_type}
 
-  @type t :: %__MODULE__{my_structs: list(MyStruct.t())}
+  @type t :: %__MODULE__{items: list(MyStruct.t())}
 
-  defstruct [:my_structs]
+  defstruct [:items]
 
-  @spec new(my_structs :: list(MyStruct.t())) :: t()
-  def new(my_structs), do: %__MODULE__{my_structs: my_structs}
+  @spec new(items :: list(MyStruct.t())) :: t()
+  def new(items), do: %__MODULE__{items: items}
 
   @impl true
-  def encode_xdr(%__MODULE__{my_structs: my_structs}) do
-    my_structs
+  def encode_xdr(%__MODULE__{items: items}) do
+    items
     |> XDR.VariableArray.new(@array_type)
     |> XDR.VariableArray.encode_xdr()
   end
 
   @impl true
-  def encode_xdr!(%__MODULE__{my_structs: my_structs}) do
-    my_structs
+  def encode_xdr!(%__MODULE__{items: items}) do
+    items
     |> XDR.VariableArray.new(@array_type)
     |> XDR.VariableArray.encode_xdr!()
   end
@@ -42,7 +42,7 @@ defmodule MyXDR.MyStructList do
 
   def decode_xdr(bytes, spec) do
     case XDR.VariableArray.decode_xdr(bytes, spec) do
-      {:ok, {my_structs, rest}} -> {:ok, {new(my_structs), rest}}
+      {:ok, {items, rest}} -> {:ok, {new(items), rest}}
       error -> error
     end
   end
@@ -51,7 +51,7 @@ defmodule MyXDR.MyStructList do
   def decode_xdr!(bytes, spec \\ @array_spec)
 
   def decode_xdr!(bytes, spec) do
-    {my_structs, rest} = XDR.VariableArray.decode_xdr!(bytes, spec)
-    {new(my_structs), rest}
+    {items, rest} = XDR.VariableArray.decode_xdr!(bytes, spec)
+    {new(items), rest}
   end
 end

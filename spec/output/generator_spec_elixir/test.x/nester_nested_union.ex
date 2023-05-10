@@ -21,29 +21,29 @@ defmodule MyXDR.NesterNestedUnion do
     default: Int
   ]
 
-  @type nester_nested_union ::
+  @type value ::
           Void.t()
           | Int.t()
           | any()
 
-  @type t :: %__MODULE__{nester_nested_union: nester_nested_union(), type: Color.t()}
+  @type t :: %__MODULE__{value: value(), type: Color.t()}
 
-  defstruct [:nester_nested_union, :type]
+  defstruct [:value, :type]
 
-  @spec new(nester_nested_union :: nester_nested_union(), type :: Color.t()) :: t()
-  def new(nester_nested_union, %Color{} = type), do: %__MODULE__{nester_nested_union: nester_nested_union, type: type}
+  @spec new(value :: value(), type :: Color.t()) :: t()
+  def new(value, %Color{} = type), do: %__MODULE__{value: value, type: type}
 
   @impl true
-  def encode_xdr(%__MODULE__{nester_nested_union: nester_nested_union, type: type}) do
+  def encode_xdr(%__MODULE__{value: value, type: type}) do
     type
-    |> XDR.Union.new(@arms, nester_nested_union)
+    |> XDR.Union.new(@arms, value)
     |> XDR.Union.encode_xdr()
   end
 
   @impl true
-  def encode_xdr!(%__MODULE__{nester_nested_union: nester_nested_union, type: type}) do
+  def encode_xdr!(%__MODULE__{value: value, type: type}) do
     type
-    |> XDR.Union.new(@arms, nester_nested_union)
+    |> XDR.Union.new(@arms, value)
     |> XDR.Union.encode_xdr!()
   end
 
@@ -52,7 +52,7 @@ defmodule MyXDR.NesterNestedUnion do
 
   def decode_xdr(bytes, spec) do
     case XDR.Union.decode_xdr(bytes, spec) do
-      {:ok, {{type, nester_nested_union}, rest}} -> {:ok, {new(nester_nested_union, type), rest}}
+      {:ok, {{type, value}, rest}} -> {:ok, {new(value, type), rest}}
       error -> error
     end
   end
@@ -61,8 +61,8 @@ defmodule MyXDR.NesterNestedUnion do
   def decode_xdr!(bytes, spec \\ union_spec())
 
   def decode_xdr!(bytes, spec) do
-    {{type, nester_nested_union}, rest} = XDR.Union.decode_xdr!(bytes, spec)
-    {new(nester_nested_union, type), rest}
+    {{type, value}, rest} = XDR.Union.decode_xdr!(bytes, spec)
+    {new(value, type), rest}
   end
 
   @spec union_spec() :: XDR.Union.t()
