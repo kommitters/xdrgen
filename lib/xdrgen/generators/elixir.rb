@@ -444,7 +444,7 @@ module Xdrgen
             end
             out.puts "#{is_number_type ? "}" : "]"}\n\n"
 
-            out.puts "@type value ::"
+            out.puts "@type #{union_name.underscore.downcase} ::"
             out.indent(4) do
               type_list = ""
               union.arms.each_with_index do |m, i|
@@ -474,27 +474,27 @@ module Xdrgen
             end
             out.puts "\n"
 
-            out.puts "@type t :: %__MODULE__{value: value(), type: #{type_reference union_discriminant, union_name_camelize}.t()}\n\n"
+            out.puts "@type t :: %__MODULE__{#{union_name.underscore.downcase}: #{union_name.underscore.downcase}(), type: #{type_reference union_discriminant, union_name_camelize}.t()}\n\n"
 
-            out.puts "defstruct [:value, :type]\n\n"
+            out.puts "defstruct [:#{union_name.underscore.downcase}, :type]\n\n"
 
-            out.puts "@spec new(value :: value(), type :: #{type_reference union_discriminant, union_name_camelize}.t()) :: t()\n"
-            out.puts "def new(value, %#{type_reference union_discriminant, union_name_camelize}{} = type), do: %__MODULE__{value: value, type: type}\n\n"
+            out.puts "@spec new(#{union_name.underscore.downcase} :: #{union_name.underscore.downcase}(), type :: #{type_reference union_discriminant, union_name_camelize}.t()) :: t()\n"
+            out.puts "def new(#{union_name.underscore.downcase}, %#{type_reference union_discriminant, union_name_camelize}{} = type), do: %__MODULE__{#{union_name.underscore.downcase}: #{union_name.underscore.downcase}, type: type}\n\n"
 
             out.puts "@impl true"
-            out.puts "def encode_xdr(%__MODULE__{value: value, type: type}) do\n"
+            out.puts "def encode_xdr(%__MODULE__{#{union_name.underscore.downcase}: #{union_name.underscore.downcase}, type: type}) do\n"
             out.indent do
               out.puts "type\n"
-              out.puts "|> XDR.Union.new(@arms, value)\n"
+              out.puts "|> XDR.Union.new(@arms, #{union_name.underscore.downcase})\n"
               out.puts "|> XDR.Union.encode_xdr()\n"
             end
             out.puts "end\n\n"
 
             out.puts "@impl true"
-            out.puts "def encode_xdr!(%__MODULE__{value: value, type: type}) do\n"
+            out.puts "def encode_xdr!(%__MODULE__{#{union_name.underscore.downcase}: #{union_name.underscore.downcase}, type: type}) do\n"
             out.indent do
               out.puts "type\n"
-              out.puts "|> XDR.Union.new(@arms, value)\n"
+              out.puts "|> XDR.Union.new(@arms, #{union_name.underscore.downcase})\n"
               out.puts "|> XDR.Union.encode_xdr!()\n"
             end
             out.puts "end\n\n"
@@ -506,7 +506,7 @@ module Xdrgen
             out.indent do
               out.puts "case XDR.Union.decode_xdr(bytes, spec) do\n"
               out.indent do
-                out.puts "{:ok, {{type, value}, rest}} -> {:ok, {new(value, type), rest}}\n"
+                out.puts "{:ok, {{type, #{union_name.underscore.downcase}}, rest}} -> {:ok, {new(#{union_name.underscore.downcase}, type), rest}}\n"
                 out.puts "error -> error\n"
               end
               out.puts "end\n"
@@ -518,8 +518,8 @@ module Xdrgen
 
             out.puts "def decode_xdr!(bytes, spec) do\n"
             out.indent do
-              out.puts "{{type, value}, rest} = XDR.Union.decode_xdr!(bytes, spec)\n"
-              out.puts "{new(value, type), rest}\n"
+              out.puts "{{type, #{union_name.underscore.downcase}}, rest} = XDR.Union.decode_xdr!(bytes, spec)\n"
+              out.puts "{new(#{union_name.underscore.downcase}, type), rest}\n"
             end
             out.puts "end\n\n"
 
