@@ -16,23 +16,23 @@ defmodule MyXDR.Hashes3 do
 
   @array_spec %{type: @array_type}
 
-  @type t :: %__MODULE__{items: list(Hash.t())}
+  @type t :: %__MODULE__{hashs: list(Hash.t())}
 
-  defstruct [:items]
+  defstruct [:hashs]
 
-  @spec new(items :: list(Hash.t())) :: t()
-  def new(items), do: %__MODULE__{items: items}
+  @spec new(hashs :: list(Hash.t())) :: t()
+  def new(hashs), do: %__MODULE__{hashs: hashs}
 
   @impl true
-  def encode_xdr(%__MODULE__{items: items}) do
-    items
+  def encode_xdr(%__MODULE__{hashs: hashs}) do
+    hashs
     |> XDR.VariableArray.new(@array_type)
     |> XDR.VariableArray.encode_xdr()
   end
 
   @impl true
-  def encode_xdr!(%__MODULE__{items: items}) do
-    items
+  def encode_xdr!(%__MODULE__{hashs: hashs}) do
+    hashs
     |> XDR.VariableArray.new(@array_type)
     |> XDR.VariableArray.encode_xdr!()
   end
@@ -42,7 +42,7 @@ defmodule MyXDR.Hashes3 do
 
   def decode_xdr(bytes, spec) do
     case XDR.VariableArray.decode_xdr(bytes, spec) do
-      {:ok, {items, rest}} -> {:ok, {new(items), rest}}
+      {:ok, {hashs, rest}} -> {:ok, {new(hashs), rest}}
       error -> error
     end
   end
@@ -51,7 +51,7 @@ defmodule MyXDR.Hashes3 do
   def decode_xdr!(bytes, spec \\ @array_spec)
 
   def decode_xdr!(bytes, spec) do
-    {items, rest} = XDR.VariableArray.decode_xdr!(bytes, spec)
-    {new(items), rest}
+    {hashs, rest} = XDR.VariableArray.decode_xdr!(bytes, spec)
+    {new(hashs), rest}
   end
 end

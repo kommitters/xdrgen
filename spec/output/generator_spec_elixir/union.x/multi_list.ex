@@ -16,23 +16,23 @@ defmodule MyXDR.MultiList do
 
   @array_spec %{type: @array_type}
 
-  @type t :: %__MODULE__{items: list(Multi.t())}
+  @type t :: %__MODULE__{multis: list(Multi.t())}
 
-  defstruct [:items]
+  defstruct [:multis]
 
-  @spec new(items :: list(Multi.t())) :: t()
-  def new(items), do: %__MODULE__{items: items}
+  @spec new(multis :: list(Multi.t())) :: t()
+  def new(multis), do: %__MODULE__{multis: multis}
 
   @impl true
-  def encode_xdr(%__MODULE__{items: items}) do
-    items
+  def encode_xdr(%__MODULE__{multis: multis}) do
+    multis
     |> XDR.VariableArray.new(@array_type)
     |> XDR.VariableArray.encode_xdr()
   end
 
   @impl true
-  def encode_xdr!(%__MODULE__{items: items}) do
-    items
+  def encode_xdr!(%__MODULE__{multis: multis}) do
+    multis
     |> XDR.VariableArray.new(@array_type)
     |> XDR.VariableArray.encode_xdr!()
   end
@@ -42,7 +42,7 @@ defmodule MyXDR.MultiList do
 
   def decode_xdr(bytes, spec) do
     case XDR.VariableArray.decode_xdr(bytes, spec) do
-      {:ok, {items, rest}} -> {:ok, {new(items), rest}}
+      {:ok, {multis, rest}} -> {:ok, {new(multis), rest}}
       error -> error
     end
   end
@@ -51,7 +51,7 @@ defmodule MyXDR.MultiList do
   def decode_xdr!(bytes, spec \\ @array_spec)
 
   def decode_xdr!(bytes, spec) do
-    {items, rest} = XDR.VariableArray.decode_xdr!(bytes, spec)
-    {new(items), rest}
+    {multis, rest} = XDR.VariableArray.decode_xdr!(bytes, spec)
+    {new(multis), rest}
   end
 end
