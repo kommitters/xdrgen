@@ -89,6 +89,7 @@ module Xdrgen
       def render_other_type(type)
         begin
           number = type_reference(type, type.name.camelize).scan(/\d+/).first
+
           case type.declaration.type.sub_type
           when :optional
             variable = type.declaration.type
@@ -101,7 +102,7 @@ module Xdrgen
             name = type_reference(type, type.name.camelize)
             if type.declaration.type.sub_type == :var_array
               is_named, size = type.declaration.type.array_size
-              size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+              size = get_size(size, is_named, true)
               length_nil = type.declaration.type.decl.resolved_size.nil?
               name = "#{name}#{size unless length_nil}"
               build_list_typedef(name, base_type, "VariableArray", variable)
@@ -109,6 +110,7 @@ module Xdrgen
               build_list_typedef(name, base_type, "FixedArray", variable)
             end
           else
+
             unless number.nil?
               render_typedef(type, true)
             end
@@ -132,7 +134,7 @@ module Xdrgen
                 unless alias_list.include?(name)
                   if m.declaration.type.sub_type == :var_array
                     is_named, size = m.declaration.type.array_size
-                    size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                    size = get_size(size, is_named, true)
                     length_nil = m.declaration.type.decl.resolved_size.nil?
                     name = "#{name}#{size unless length_nil}"
                   end
@@ -153,7 +155,7 @@ module Xdrgen
                 module_name = type_reference m, m.name.camelize
                 if m.declaration.type.sub_type == :var_array
                   is_named, size = m.declaration.type.array_size
-                  size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                  size = get_size(size, is_named, true)
                   length_nil = m.declaration.type.decl.resolved_size.nil?
                   module_name = "#{module_name}#{size unless length_nil}"
                 end
@@ -166,7 +168,7 @@ module Xdrgen
               module_name = type_reference m, m.name.camelize
               if m.declaration.type.sub_type == :var_array
                 is_named, size = m.declaration.type.array_size
-                size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                size = get_size(size, is_named, true)
                 length_nil = m.declaration.type.decl.resolved_size.nil?
                 module_name = "#{module_name}#{size unless length_nil}"
               end
@@ -201,7 +203,7 @@ module Xdrgen
                 module_name = type_reference m, m.name.camelize
                 if m.declaration.type.sub_type == :var_array
                   is_named, size = m.declaration.type.array_size
-                  size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                  size = get_size(size, is_named, true)
                   length_nil = m.declaration.type.decl.resolved_size.nil?
                   module_name = "#{module_name}#{size unless length_nil}"
                 end
@@ -398,7 +400,7 @@ module Xdrgen
                   unless m.void?
                     if m.declaration.type.sub_type == :var_array
                       is_named, size = m.declaration.type.array_size
-                      size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                      size = get_size(size, is_named, true)
                       length_nil = m.declaration.type.decl.resolved_size.nil?
                       name = "#{name}#{size unless length_nil}"
                     end
@@ -421,7 +423,7 @@ module Xdrgen
                 unless arm.void?
                   if arm.declaration.type.sub_type == :var_array
                     is_named, size = arm.declaration.type.array_size
-                    size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                    size = get_size(size, is_named, true)
                     length_nil = arm.declaration.type.decl.resolved_size.nil?
                     arm_name = "#{arm_name}#{size unless length_nil}"
                   end
@@ -450,7 +452,7 @@ module Xdrgen
                 unless m.void?
                   if m.declaration.type.sub_type == :var_array
                     is_named, size = m.declaration.type.array_size
-                    size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+                    size = get_size(size, is_named, true)
                     length_nil = m.declaration.type.decl.resolved_size.nil?
                     name = "#{name}#{size unless length_nil}"
                   end
@@ -534,6 +536,16 @@ module Xdrgen
       end
 
       private
+      def get_size(size, is_named = false, is_var_array_type = false)
+        if size
+          if is_var_array_type
+            is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+          else
+            size.scan(/\D/).any? ? @constants["#{size.underscore.downcase}"] : size
+          end
+        end
+      end
+
       def render_base_classes
         file_name = "base.ex"
         out = @output.open(file_name)
@@ -616,15 +628,14 @@ module Xdrgen
             "Int"
           when AST::Typespecs::Opaque
             if type.fixed?
-              size = (type.size.scan(/\D/).any? ? @constants["#{type.size.underscore.downcase}"] : type.size)
-              "Opaque#{size}"
+              "Opaque#{get_size(type.size)}"
             else
-              type.size ? "VariableOpaque#{(type.size.scan(/\D/).any? ? @constants["#{type.size.underscore.downcase}"] : type.size)}" : "VariableOpaque"
+              type.size ? "VariableOpaque#{get_size(type.size)}" : "VariableOpaque"
             end
           when AST::Typespecs::Quadruple
             raise "no quadruple support in elixir"
           when AST::Typespecs::String
-            "String#{type.size}"
+            "String#{get_size(type.size)}"
           when AST::Typespecs::UnsignedHyper
             "HyperUInt"
           when AST::Typespecs::UnsignedInt
@@ -949,7 +960,7 @@ module Xdrgen
       end
 
       def build_opaque_typedef(typedef, type, xdr_module, size = nil, is_struct)
-        size = (size.scan(/\D/).any? ? @constants["#{size.underscore.downcase}"] : size) unless size.nil?
+        size = get_size(size) unless size.nil?
         name = "#{type}#{size}"
 
         unless size.nil?
@@ -1080,10 +1091,10 @@ module Xdrgen
 
         is_named, size = type.array_size
         if type.sub_type == :var_array
-          size = is_named ? @constants["#{size.underscore.downcase}"] : (size || MAX_INT)
+          size = get_size(size, is_named, true)
           length_nil = type.decl.resolved_size.nil?
         else
-          size = is_named ? @constants["#{size.underscore.downcase}"] : size
+          size = get_size(size, is_named)
           length_nil = false
         end
 
