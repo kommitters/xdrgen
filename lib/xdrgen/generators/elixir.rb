@@ -123,7 +123,6 @@ module Xdrgen
         struct_name = name struct
         file_name = "#{struct_name.underscore}.ex"
         out = @output.open(file_name)
-        has_ext = false
 
         render_define_block(out, struct_name) do
           out.indent do
@@ -160,8 +159,7 @@ module Xdrgen
                   length_nil = m.declaration.type.decl.resolved_size.nil?
                   module_name = "#{module_name}#{size unless length_nil}"
                 end
-                has_ext = m.name.underscore.downcase == "ext"
-                out.puts "#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}: #{module_name}#{comma_unless_last(i, struct.members)}"
+                out.puts "#{m.name.underscore.downcase}: #{module_name}#{comma_unless_last(i, struct.members)}"
               end
             end
             out.puts ")\n\n"
@@ -180,21 +178,21 @@ module Xdrgen
 
             types = "@type t :: %__MODULE__{"
               struct.members.each_with_index do |m, i|
-              types += "#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}: type_#{m.name.underscore.downcase}()#{comma_and_space_unless_last(i, struct.members)}"
+              types += "#{m.name.underscore.downcase}: type_#{m.name.underscore.downcase}()#{comma_and_space_unless_last(i, struct.members)}"
               end
             types += "}\n\n"
             out.puts types
 
             def_struct = "defstruct ["
               struct.members.each_with_index do |m, i|
-              def_struct += ":#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
+              def_struct += ":#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
               end
             def_struct += "]\n\n"
             out.puts def_struct
 
             spec = "@spec new("
               struct.members.each_with_index do |m, i|
-              spec += "#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase} :: type_#{m.name.underscore.downcase}()#{comma_and_space_unless_last(i, struct.members)}"
+              spec += "#{m.name.underscore.downcase} :: type_#{m.name.underscore.downcase}()#{comma_and_space_unless_last(i, struct.members)}"
               end
             spec += ") :: t()\n"
             out.puts spec
@@ -209,13 +207,13 @@ module Xdrgen
                   length_nil = m.declaration.type.decl.resolved_size.nil?
                   module_name = "#{module_name}#{size unless length_nil}"
                 end
-                out.puts "%#{module_name}{} = #{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}#{comma_unless_last(i, struct.members)}"
+                out.puts "%#{module_name}{} = #{m.name.underscore.downcase}#{comma_unless_last(i, struct.members)}"
               end
             end
             out.puts "),\n"
             function = "do: %__MODULE__{"
               struct.members.each_with_index do |m, i|
-              function += "#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}: #{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
+              function += "#{m.name.underscore.downcase}: #{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
               end
             function += "}\n\n"
             out.puts function
@@ -223,14 +221,14 @@ module Xdrgen
             out.puts "@impl true\n"
             impl = "def encode_xdr(%__MODULE__{"
               struct.members.each_with_index do |m, i|
-              impl += "#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}: #{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
+              impl += "#{m.name.underscore.downcase}: #{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
               end
             impl += "}) do\n"
             out.puts impl
             args = "["
             out.indent do
               struct.members.each_with_index do |m, i|
-                args += "#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}: #{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
+                args += "#{m.name.underscore.downcase}: #{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
               end
               args += "]\n"
               out.puts args
@@ -242,14 +240,14 @@ module Xdrgen
             out.puts "@impl true\n"
             impl = "def encode_xdr!(%__MODULE__{"
               struct.members.each_with_index do |m, i|
-              impl += "#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}: #{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
+              impl += "#{m.name.underscore.downcase}: #{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
               end
             impl += "}) do\n"
             out.puts impl
             args = "["
             out.indent do
               struct.members.each_with_index do |m, i|
-                args += "#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}: #{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
+                args += "#{m.name.underscore.downcase}: #{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
               end
               args += "]\n"
               out.puts args
@@ -267,14 +265,14 @@ module Xdrgen
                 out.indent do
                   comp = "{:ok, {%XDR.Struct{components: ["
                     struct.members.each_with_index do |m, i|
-                    comp += "#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}: #{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
+                    comp += "#{m.name.underscore.downcase}: #{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
                     end
                   comp += "]}, rest}} ->\n"
                   out.puts comp
                   out.indent do
                     new_comp = "{:ok, {new("
                     struct.members.each_with_index do |m, i|
-                      new_comp += "#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
+                      new_comp += "#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
                     end
                     new_comp += "), rest}}"
                     out.puts new_comp
@@ -292,7 +290,7 @@ module Xdrgen
             out.indent do
               comp = "{%XDR.Struct{components: ["
                 struct.members.each_with_index do |m, i|
-                comp += "#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}: #{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
+                comp += "#{m.name.underscore.downcase}: #{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
                 end
               comp += "]}, rest} =\n"
               out.puts comp
@@ -301,7 +299,7 @@ module Xdrgen
               end
               new_comp = "{new("
                 struct.members.each_with_index do |m, i|
-                new_comp += "#{has_ext ? "#{struct_name.underscore.downcase}_" : ""}#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
+                new_comp += "#{m.name.underscore.downcase}#{comma_and_space_unless_last(i, struct.members)}"
                 end
               new_comp += "), rest}"
               out.puts new_comp
