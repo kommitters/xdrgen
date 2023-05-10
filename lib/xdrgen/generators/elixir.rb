@@ -167,7 +167,7 @@ module Xdrgen
                 length_nil = m.declaration.type.decl.resolved_size.nil?
                 module_name = "#{module_name}#{size unless length_nil}"
               end
-              out.puts "@type #{m.name.underscore.downcase} :: #{module_name}.t()"
+              out.puts "@type type_#{m.name.underscore.downcase} :: #{module_name}.t()"
             end
             out.puts "\n"
 
