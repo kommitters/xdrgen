@@ -398,7 +398,7 @@ module Xdrgen
                 end
                 arm.cases.each_with_index do |acase, o|
                   switch = if acase.value.is_a?(AST::Identifier)
-                    "#{member_name(acase.value)}:"
+                    "#{acase.value.text_value}:"
                   else
                     "#{acase.value.text_value} =>"
                   end
@@ -539,10 +539,6 @@ module Xdrgen
           end
         end
         value
-      end
-
-      def member_name(member)
-        name(member).underscore.upcase
       end
 
       def type_reference(decl, container_name)
