@@ -37,21 +37,6 @@ module Xdrgen
         end
       end
 
-      def render_source_comment(out, defn)
-        return if defn.is_a?(AST::Definitions::Namespace)
-
-        out.puts <<-EOS.strip_heredoc
-          comment ~S"""
-          XDR Source Code::\n
-        EOS
-
-        out.puts "    " + defn.text_value.split("\n").join("\n    ")
-
-        out.puts <<-EOS.strip_heredoc
-          """\n
-        EOS
-      end
-
       def render_moduledoc(out, type)
         out.puts <<-EOS.strip_heredoc
           @moduledoc """
@@ -88,26 +73,27 @@ module Xdrgen
 
       def render_other_type(type)
         begin
-          number = type_reference(type, type.name.camelize).scan(/\d+/).first
+          type_name_camelize = type.name.camelize
+          declaration_type = type.declaration.type
+          sub_type = declaration_type.sub_type
+          number = type_reference(type, type_name_camelize).scan(/\d+/).first
 
-          case type.declaration.type.sub_type
+          case sub_type
           when :optional
-            variable = type.declaration.type
-            base_type = type_string(variable)
-            name = type_reference(type, type.name.camelize)
+            base_type = type_string(declaration_type)
+            name = type_reference(type, type_name_camelize)
             build_optional_typedef(type, base_type, name)
           when :var_array, :array
-            variable = type.declaration.type
-            base_type = type_string(variable)
-            name = type_reference(type, type.name.camelize)
-            if type.declaration.type.sub_type == :var_array
-              is_named, size = type.declaration.type.array_size
+            base_type = type_string(declaration_type)
+            name = type_reference(type, type_name_camelize)
+            if sub_type == :var_array
+              is_named, size = declaration_type.array_size
               size = get_size(size, is_named, true)
-              length_nil = type.declaration.type.decl.resolved_size.nil?
+              length_nil = declaration_type.decl.resolved_size.nil?
               name = "#{name}#{size unless length_nil}"
-              build_list_typedef(name, base_type, "VariableArray", variable)
+              build_list_typedef(name, base_type, "VariableArray", declaration_type)
             else
-              build_list_typedef(name, base_type, "FixedArray", variable)
+              build_list_typedef(name, base_type, "FixedArray", declaration_type)
             end
           else
 
@@ -133,10 +119,7 @@ module Xdrgen
                 name = type_reference m, m.name.camelize
                 unless alias_list.include?(name)
                   if m.declaration.type.sub_type == :var_array
-                    is_named, size = m.declaration.type.array_size
-                    size = get_size(size, is_named, true)
-                    length_nil = m.declaration.type.decl.resolved_size.nil?
-                    name = "#{name}#{size unless length_nil}"
+                    name = add_size_to_name(m, name)
                   end
                   alias_list << name
                   render_other_type(m)
@@ -154,10 +137,7 @@ module Xdrgen
               struct.members.each_with_index do |m, i|
                 module_name = type_reference m, m.name.camelize
                 if m.declaration.type.sub_type == :var_array
-                  is_named, size = m.declaration.type.array_size
-                  size = get_size(size, is_named, true)
-                  length_nil = m.declaration.type.decl.resolved_size.nil?
-                  module_name = "#{module_name}#{size unless length_nil}"
+                  module_name = add_size_to_name(m, module_name)
                 end
                 out.puts "#{m.name.underscore.downcase}: #{module_name}#{comma_unless_last(i, struct.members)}"
               end
@@ -167,10 +147,7 @@ module Xdrgen
             struct.members.each_with_index do |m, i|
               module_name = type_reference m, m.name.camelize
               if m.declaration.type.sub_type == :var_array
-                is_named, size = m.declaration.type.array_size
-                size = get_size(size, is_named, true)
-                length_nil = m.declaration.type.decl.resolved_size.nil?
-                module_name = "#{module_name}#{size unless length_nil}"
+                module_name = add_size_to_name(m, module_name)
               end
               out.puts "@type type_#{m.name.underscore.downcase} :: #{module_name}.t()"
             end
@@ -202,10 +179,7 @@ module Xdrgen
               struct.members.each_with_index do |m, i|
                 module_name = type_reference m, m.name.camelize
                 if m.declaration.type.sub_type == :var_array
-                  is_named, size = m.declaration.type.array_size
-                  size = get_size(size, is_named, true)
-                  length_nil = m.declaration.type.decl.resolved_size.nil?
-                  module_name = "#{module_name}#{size unless length_nil}"
+                  module_name = add_size_to_name(m, module_name)
                 end
                 out.puts "%#{module_name}{} = #{m.name.underscore.downcase}#{comma_unless_last(i, struct.members)}"
               end
@@ -399,10 +373,7 @@ module Xdrgen
                 unless alias_list.include?(name)
                   unless m.void?
                     if m.declaration.type.sub_type == :var_array
-                      is_named, size = m.declaration.type.array_size
-                      size = get_size(size, is_named, true)
-                      length_nil = m.declaration.type.decl.resolved_size.nil?
-                      name = "#{name}#{size unless length_nil}"
+                      name = add_size_to_name(m, name)
                     end
                   end
                   alias_list << name
@@ -422,10 +393,7 @@ module Xdrgen
                 arm_name = arm.void? ? "Void" : "#{type_reference arm, arm.name.camelize}"
                 unless arm.void?
                   if arm.declaration.type.sub_type == :var_array
-                    is_named, size = arm.declaration.type.array_size
-                    size = get_size(size, is_named, true)
-                    length_nil = arm.declaration.type.decl.resolved_size.nil?
-                    arm_name = "#{arm_name}#{size unless length_nil}"
+                    arm_name = add_size_to_name(m, arm_name)
                   end
                 end
                 arm.cases.each_with_index do |acase, o|
@@ -451,10 +419,7 @@ module Xdrgen
                 name = m.void? ? "Void" : "#{type_reference m, m.name.camelize}"
                 unless m.void?
                   if m.declaration.type.sub_type == :var_array
-                    is_named, size = m.declaration.type.array_size
-                    size = get_size(size, is_named, true)
-                    length_nil = m.declaration.type.decl.resolved_size.nil?
-                    name = "#{name}#{size unless length_nil}"
+                    name = add_size_to_name(m, name)
                   end
                 end
                 if i == 0
@@ -536,6 +501,13 @@ module Xdrgen
       end
 
       private
+      def add_size_to_name(member, name)
+        is_named, size = member.declaration.type.array_size
+        size = get_size(size, is_named, true)
+        length_nil = member.declaration.type.decl.resolved_size.nil?
+        "#{name}#{size unless length_nil}"
+      end
+
       def get_size(size, is_named = false, is_var_array_type = false)
         if size
           if is_var_array_type
