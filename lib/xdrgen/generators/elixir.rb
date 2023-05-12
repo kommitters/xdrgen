@@ -5,6 +5,8 @@ module Xdrgen
 
       def generate
         @constants = Hash.new
+
+        render_consts_definitions(@top)
         render_definitions(@top)
         render_base_classes
       end
@@ -13,6 +15,11 @@ module Xdrgen
       def render_definitions(node)
         node.definitions.each{|n| render_definition n }
         node.namespaces.each{|n| render_definitions n }
+      end
+
+      def render_consts_definitions(node)
+        node.definitions.each{|n| render_consts n }
+        node.namespaces.each{|n| render_consts_definitions n }
       end
 
       def render_nested_definitions(defn)
@@ -32,7 +39,12 @@ module Xdrgen
           render_union defn
         when AST::Definitions::Typedef ;
           render_typedef(defn, false)
-        when AST::Definitions::Const ;
+        end
+      end
+
+      def render_consts(defn)
+        case defn
+        when AST::Definitions::Const;
           render_const defn
         end
       end
