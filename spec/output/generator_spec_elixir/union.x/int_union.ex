@@ -11,7 +11,6 @@ defmodule MyXDR.IntUnion do
   @behaviour XDR.Declaration
 
   alias MyXDR.{
-    Int,
     Error,
     MultiList
   }
@@ -25,16 +24,17 @@ defmodule MyXDR.IntUnion do
           Error.t()
           | MultiList.t()
 
-  @type t :: %__MODULE__{value: value(), type: Int.t()}
+  @type t :: %__MODULE__{value: value(), type: integer()}
 
   defstruct [:value, :type]
 
-  @spec new(value :: value(), type :: Int.t()) :: t()
-  def new(value, %Int{} = type), do: %__MODULE__{value: value, type: type}
+  @spec new(value :: value(), type :: integer()) :: t()
+  def new(value, type), do: %__MODULE__{value: value, type: type}
 
   @impl true
   def encode_xdr(%__MODULE__{value: value, type: type}) do
     type
+    |> XDR.Int.new()
     |> XDR.Union.new(@arms, value)
     |> XDR.Union.encode_xdr()
   end
@@ -42,6 +42,7 @@ defmodule MyXDR.IntUnion do
   @impl true
   def encode_xdr!(%__MODULE__{value: value, type: type}) do
     type
+    |> XDR.Int.new()
     |> XDR.Union.new(@arms, value)
     |> XDR.Union.encode_xdr!()
   end
@@ -67,7 +68,7 @@ defmodule MyXDR.IntUnion do
   @spec union_spec() :: XDR.Union.t()
   defp union_spec do
     0
-    |> Int.new()
+    |> XDR.Int.new()
     |> XDR.Union.new(@arms)
   end
 end
