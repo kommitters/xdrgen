@@ -507,7 +507,7 @@ module Xdrgen
             out.puts "defp union_spec do"
             out.indent do
               out.puts "#{is_number_type ? 0 : "nil"}\n"
-              out.puts "|> #{is_number_type ? "XDR.Int.new()" : "#{type_reference union_discriminant, union_name_camelize}.new()\n"}"
+              out.puts "|> #{type_reference union_discriminant, union_name_camelize}.new()\n"
               out.puts "|> XDR.Union.new(@arms)\n"
             end
             out.puts "end\n"
