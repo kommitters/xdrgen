@@ -378,7 +378,7 @@ module Xdrgen
           out.indent do
             out.puts "alias #{@namespace}.{\n"
             out.indent do
-              out.puts "#{type_reference union_discriminant, union_name_camelize}," unless is_number_type
+              out.puts "#{type_reference union_discriminant, union_name_camelize},"
               alias_list = []
               union.arms.each do |m|
                 name = m.void? ? "Void" : "#{type_reference m, m.name.camelize}"
@@ -463,7 +463,7 @@ module Xdrgen
             out.puts "def encode_xdr(%__MODULE__{value: value, type: type}) do\n"
             out.indent do
               out.puts "type\n"
-              out.puts "|> XDR.Int.new()" if is_number_type
+              out.puts "|> #{type_reference(union_discriminant, union_name_camelize)}.new()" if is_number_type
               out.puts "|> XDR.Union.new(@arms, value)\n"
               out.puts "|> XDR.Union.encode_xdr()\n"
             end
@@ -473,7 +473,7 @@ module Xdrgen
             out.puts "def encode_xdr!(%__MODULE__{value: value, type: type}) do\n"
             out.indent do
               out.puts "type\n"
-              out.puts "|> XDR.Int.new()" if is_number_type
+              out.puts "|> #{type_reference(union_discriminant, union_name_camelize)}.new()" if is_number_type
               out.puts "|> XDR.Union.new(@arms, value)\n"
               out.puts "|> XDR.Union.encode_xdr!()\n"
             end

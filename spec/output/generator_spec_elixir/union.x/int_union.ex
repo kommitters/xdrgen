@@ -11,6 +11,7 @@ defmodule MyXDR.IntUnion do
   @behaviour XDR.Declaration
 
   alias MyXDR.{
+    Int,
     Error,
     MultiList
   }
@@ -34,7 +35,7 @@ defmodule MyXDR.IntUnion do
   @impl true
   def encode_xdr(%__MODULE__{value: value, type: type}) do
     type
-    |> XDR.Int.new()
+    |> Int.new()
     |> XDR.Union.new(@arms, value)
     |> XDR.Union.encode_xdr()
   end
@@ -42,7 +43,7 @@ defmodule MyXDR.IntUnion do
   @impl true
   def encode_xdr!(%__MODULE__{value: value, type: type}) do
     type
-    |> XDR.Int.new()
+    |> Int.new()
     |> XDR.Union.new(@arms, value)
     |> XDR.Union.encode_xdr!()
   end
