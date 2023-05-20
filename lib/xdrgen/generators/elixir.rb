@@ -1153,7 +1153,9 @@ module Xdrgen
 
         case type.sub_type
           when :optional
-            build_optional_typedef(typedef, base_type, name)
+            render_other_type(typedef)
+            optional_name = type_reference(typedef, typedef.name.camelize)
+            build_optional_typedef(typedef, optional_name, name)
           when :array
             build_list_typedef(name, base_type, "FixedArray", type)
           when :var_array
